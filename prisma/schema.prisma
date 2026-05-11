@@ -1,0 +1,71 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id          String   @id @default(uuid())
+  email       String?  @unique
+  name        String?
+
+  age         Int?
+  maxHR       Int?
+  restingHR   Int?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  stravaToken StravaToken?
+  activities  Activity[]
+}
+
+model StravaToken {
+  id           String   @id @default(uuid())
+
+  userId       String   @unique
+  user         User     @relation(fields: [userId], references: [id])
+
+  accessToken  String
+  refreshToken String
+  expiresAt    Int
+  athleteId    BigInt
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Activity {
+  id                   BigInt  @id  // Strava activity ID
+
+  userId               String
+  user                 User    @relation(fields: [userId], references: [id])
+
+  name                 String?
+  type                 String?
+
+  distance             Float    // meters
+  movingTime           Int      // seconds
+  elapsedTime          Int?
+
+  avgHR                Int?
+  maxHR                Int?
+
+  elevationGain        Float?
+
+  startDate            DateTime
+  timezone             String?
+
+  createdAt            DateTime @default(now())
+
+  @@index([userId])
+  @@index([startDate])
+}
