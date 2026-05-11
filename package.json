@@ -8,7 +8,8 @@
     "test": "test",
     "start": "node --watch src/index.ts",
     "prisma:generate": "npx prisma generate",
-    "prisma:migrate": "npx prisma migrate dev"
+    "prisma:migrate": "npx prisma migrate dev",
+    "prisma:update_db": "npx prisma generate && npx prisma migrate dev"
   },
   "repository": {
     "type": "git",
@@ -24,9 +25,17 @@
     "@prisma/client": "^7.8.0",
     "@prisma/config": "^7.8.0",
     "@types/node": "^25.6.2",
+    "bcrypt": "^6.0.0",
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3",
     "typescript": "^6.0.3"
   },
   "devDependencies": {
+    "@types/bcrypt": "^6.0.0",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/jsonwebtoken": "^9.0.10",
     "dotenv": "^17.4.2",
     "prisma": "^7.8.0"
   }

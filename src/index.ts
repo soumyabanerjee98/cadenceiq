@@ -1,1 +1,35 @@
-console.log('Hi there');
+import 'dotenv/config';
+import express from 'express';
+import cors from 'cors';
+import { validateApiKey } from './middleware/apiKey.middleware.js';
+
+const app = express();
+
+app.use(
+  cors({
+    origin: '*',
+    credentials: true,
+  }),
+);
+
+app.use(express.json());
+
+app.use('/api', validateApiKey); // apply routes
+
+app.get('/health', (_, res) => {
+  res.json({ status: 'OK' });
+});
+
+app.use((err: any, req: any, res: any, next: any) => {
+  console.error(err);
+  res.status(500).json({
+    error: 'Internal Server Error',
+    message: err.message,
+  });
+});
+
+const PORT = process.env.PORT || 8000;
+
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
