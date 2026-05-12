@@ -9,6 +9,7 @@ import {
 import { getValidAccessToken, syncActivity } from './strava.service.js';
 import axios from 'axios';
 import { experienceMultiplier } from '@/config/strava.config.js';
+import { adjustPlanWithAI, generateCoachInsights } from './ai.service.js';
 
 export const calculateFatigue = async (userId: string) => {
   const last7Days = new Date();
@@ -76,13 +77,36 @@ export const buildWeeklyPlan = async (userId: string, goal: Goal) => {
 
   const plan = generateWeeklyPlan(adjustedLoad);
 
-  return {
+  let responseObject: any = {
     currentLoad: stats.totalLoad,
     targetLoad,
     adjustedLoad,
     fatigue,
     plan,
   };
+
+  if (goal.aiFeedback) {
+    const insights = await generateCoachInsights({
+      currentLoad: stats.totalLoad,
+      targetLoad,
+      plan,
+      fatigue,
+      goal,
+    });
+    responseObject.insights = insights;
+  }
+  if (goal.adjustPlanWithAI) {
+    const adjustments = await adjustPlanWithAI({
+      currentLoad: stats.totalLoad,
+      targetLoad,
+      plan,
+      fatigue,
+      goal,
+    });
+    responseObject.adjustments = adjustments;
+  }
+
+  return responseObject;
 };
 
 export const fetchActivitiesPreview = async (

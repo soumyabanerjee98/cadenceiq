@@ -5,6 +5,8 @@ export const goalSchema = z.object({
   targetDistance: z.number().optional(),
   eventDate: z.string().optional(),
   experienceLevel: z.enum(['beginner', 'intermediate', 'advanced']),
+  aiFeedback: z.boolean().optional(),
+  adjustPlanWithAI: z.boolean().optional(),
 });
 
 export const syncActivitiesSchema = z.object({

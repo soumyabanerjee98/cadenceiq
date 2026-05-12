@@ -127,4 +127,14 @@ type Goal = {
   targetDistance?: number; // e.g. 200km/week
   eventDate?: Date;
   experienceLevel: 'beginner' | 'intermediate' | 'advanced';
+  aiFeedback?: boolean;
+  adjustPlanWithAI?: boolean;
+};
+
+type CoachInput = {
+  currentLoad: number;
+  targetLoad: number;
+  fatigue: number;
+  plan: any[];
+  goal: any;
 };
