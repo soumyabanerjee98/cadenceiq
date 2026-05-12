@@ -70,53 +70,106 @@ export const processWebhookEvent = async (event: StravaEvent) => {
 };
 
 const syncActivity = async (activityId: number, athleteId: number) => {
-  const token = await prisma.stravaToken.findFirst({
+  let token = await prisma.stravaToken.findFirst({
     where: { athleteId: BigInt(athleteId) },
   });
 
   if (!token) {
-    console.warn('No token found for athlete: ', athleteId);
-    return;
+    throw Error('No token found for athlete: ' + athleteId);
   }
 
-  const response = await axios.get(
-    `https://www.strava.com/api/v3/activities/${activityId}`,
-    {
-      headers: {
-        Authorization: `Bearer ${token.accessToken}`,
+  token = await getValidAccessToken(token);
+
+  try {
+    if (!token) {
+      throw Error('No validated token found for athlete: ' + athleteId);
+    }
+    const response = await axios.get(
+      `https://www.strava.com/api/v3/activities/${activityId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token.accessToken}`,
+        },
       },
-    },
-  );
+    );
 
-  const activity = response.data;
+    const activity = response.data;
 
-  await prisma.activity.upsert({
-    where: { id: BigInt(activity.id) },
-    update: {
-      name: activity.name,
-      distance: activity.distance,
-      movingTime: activity.moving_time,
-      avgHR: activity.average_heartrate ?? null,
-      maxHR: activity.max_heartrate ?? null,
-      elevationGain: activity.total_elevation_gain ?? null,
-      startDate: new Date(activity.start_date),
-    },
-    create: {
-      id: BigInt(activity.id),
-      userId: token.userId,
-      name: activity.name,
-      distance: activity.distance,
-      movingTime: activity.moving_time,
-      avgHR: activity.average_heartrate ?? null,
-      maxHR: activity.max_heartrate ?? null,
-      elevationGain: activity.total_elevation_gain ?? null,
-      startDate: new Date(activity.start_date),
-    },
-  });
+    await prisma.activity.upsert({
+      where: { id: BigInt(activity.id) },
+      update: {
+        name: activity.name,
+        distance: activity.distance,
+        movingTime: activity.moving_time,
+        avgHR: activity.average_heartrate ?? null,
+        maxHR: activity.max_heartrate ?? null,
+        elevationGain: activity.total_elevation_gain ?? null,
+        startDate: new Date(activity.start_date),
+      },
+      create: {
+        id: BigInt(activity.id),
+        userId: token.userId,
+        name: activity.name,
+        distance: activity.distance,
+        movingTime: activity.moving_time,
+        avgHR: activity.average_heartrate ?? null,
+        maxHR: activity.max_heartrate ?? null,
+        elevationGain: activity.total_elevation_gain ?? null,
+        startDate: new Date(activity.start_date),
+      },
+    });
 
-  console.log('Activity synced: ', activity.id);
+    console.log('Activity synced: ', activity.id);
 
-  return { activityId: activity.id };
+    return { activityId: activity.id };
+  } catch (error: any) {
+    if (error.response?.status === 401) {
+      console.log('Token invalid, refreshing and retrying...');
+
+      token = await refreshAccessToken(token);
+
+      const retry = await axios.get(
+        `https://www.strava.com/api/v3/activities/${activityId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token.accessToken}`,
+          },
+        },
+      );
+
+      const activity = retry.data;
+
+      await prisma.activity.upsert({
+        where: { id: BigInt(activity.id) },
+        update: {
+          name: activity.name,
+          distance: activity.distance,
+          movingTime: activity.moving_time,
+          avgHR: activity.average_heartrate ?? null,
+          maxHR: activity.max_heartrate ?? null,
+          elevationGain: activity.total_elevation_gain ?? null,
+          startDate: new Date(activity.start_date),
+        },
+        create: {
+          id: BigInt(activity.id),
+          userId: token.userId,
+          name: activity.name,
+          distance: activity.distance,
+          movingTime: activity.moving_time,
+          avgHR: activity.average_heartrate ?? null,
+          maxHR: activity.max_heartrate ?? null,
+          elevationGain: activity.total_elevation_gain ?? null,
+          startDate: new Date(activity.start_date),
+        },
+      });
+
+      console.log('Activity synced after retry: ', activity.id);
+
+      return { activityId: activity.id };
+    } else {
+      throw Error('Sync error: ' + error.message);
+    }
+  }
 };
 
 const deleteActivity = async (activityId: number) => {
@@ -127,4 +180,37 @@ const deleteActivity = async (activityId: number) => {
   console.log('Activity deleted: ', activityId);
 
   return { activityId };
+};
+
+export const getValidAccessToken = async (token: any) => {
+  const now = Math.floor(Date.now() / 1000);
+
+  if (token.expiresAt <= now + 60) {
+    console.log('Strava Token expired, refreshing...');
+    return await refreshAccessToken(token);
+  }
+
+  return token;
+};
+
+export const refreshAccessToken = async (token: any) => {
+  const response = await axios.post('https://www.strava.com/oauth/token', {
+    client_id: process.env.STRAVA_CLIENT_ID,
+    client_secret: process.env.STRAVA_CLIENT_SECRET,
+    grant_type: 'refresh_token',
+    refresh_token: token.refreshToken,
+  });
+
+  const data = response.data;
+
+  const updated = await prisma.stravaToken.update({
+    where: { id: token.id },
+    data: {
+      accessToken: data.access_token,
+      refreshToken: data.refresh_token,
+      expiresAt: data.expires_at,
+    },
+  });
+
+  return updated;
 };
