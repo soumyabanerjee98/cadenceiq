@@ -12,7 +12,13 @@ app.use(
   }),
 );
 
-app.use(express.json());
+app.use(
+  express.json({
+    verify: (req: any, res, buf) => {
+      req.rawBody = buf;
+    },
+  }),
+);
 
 app.use('/api', validateApiKey); // apply routes
 
@@ -22,7 +28,7 @@ app.get('/health', (_, res) => {
 
 app.use((err: any, req: any, res: any, next: any) => {
   console.error(err);
-  res.status(500).json({
+  return res.status(500).json({
     error: 'Internal Server Error',
     message: err.message,
   });
