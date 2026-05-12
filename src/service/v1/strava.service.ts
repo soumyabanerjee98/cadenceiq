@@ -153,7 +153,7 @@ export const syncActivity = async (activityId: number, athleteId: number) => {
       },
     );
 
-    const activity = response.data;
+    const activity: StravaActivity = response.data;
 
     const zone =
       activity.average_heartrate && activity.max_heartrate
@@ -169,12 +169,15 @@ export const syncActivity = async (activityId: number, athleteId: number) => {
       where: { id: BigInt(activity.id) },
       update: {
         name: activity.name,
+        type: activity.type,
         distance: activity.distance,
         movingTime: activity.moving_time,
+        elapsedTime: activity.elapsed_time,
         avgHR: activity.average_heartrate ?? null,
         maxHR: activity.max_heartrate ?? null,
         elevationGain: activity.total_elevation_gain ?? null,
         startDate: new Date(activity.start_date),
+        timezone: activity.timezone,
         zone,
         trainingLoad,
       },
@@ -182,12 +185,15 @@ export const syncActivity = async (activityId: number, athleteId: number) => {
         id: BigInt(activity.id),
         userId: token.userId,
         name: activity.name,
+        type: activity.type,
         distance: activity.distance,
         movingTime: activity.moving_time,
+        elapsedTime: activity.elapsed_time,
         avgHR: activity.average_heartrate ?? null,
         maxHR: activity.max_heartrate ?? null,
         elevationGain: activity.total_elevation_gain ?? null,
         startDate: new Date(activity.start_date),
+        timezone: activity.timezone,
         zone,
         trainingLoad,
       },
@@ -211,7 +217,7 @@ export const syncActivity = async (activityId: number, athleteId: number) => {
         },
       );
 
-      const activity = retry.data;
+      const activity: StravaActivity = retry.data;
 
       const zone =
         activity.average_heartrate && activity.max_heartrate
@@ -230,12 +236,15 @@ export const syncActivity = async (activityId: number, athleteId: number) => {
         where: { id: BigInt(activity.id) },
         update: {
           name: activity.name,
+          type: activity.type,
           distance: activity.distance,
           movingTime: activity.moving_time,
+          elapsedTime: activity.elapsed_time,
           avgHR: activity.average_heartrate ?? null,
           maxHR: activity.max_heartrate ?? null,
           elevationGain: activity.total_elevation_gain ?? null,
           startDate: new Date(activity.start_date),
+          timezone: activity.timezone,
           zone,
           trainingLoad,
         },
@@ -243,12 +252,15 @@ export const syncActivity = async (activityId: number, athleteId: number) => {
           id: BigInt(activity.id),
           userId: token.userId,
           name: activity.name,
+          type: activity.type,
           distance: activity.distance,
           movingTime: activity.moving_time,
+          elapsedTime: activity.elapsed_time,
           avgHR: activity.average_heartrate ?? null,
           maxHR: activity.max_heartrate ?? null,
           elevationGain: activity.total_elevation_gain ?? null,
           startDate: new Date(activity.start_date),
+          timezone: activity.timezone,
           zone,
           trainingLoad,
         },

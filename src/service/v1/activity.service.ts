@@ -4,6 +4,8 @@ import {
   generateWeeklyPlan,
   getTargetWeeklyLoad,
 } from '@/utils/strava.util.js';
+import { getValidAccessToken, syncActivity } from './strava.service.js';
+import axios from 'axios';
 
 export const calculateFatigue = async (userId: string) => {
   const last7Days = new Date();
@@ -64,4 +66,145 @@ export const buildWeeklyPlan = async (userId: string, goal: Goal) => {
     fatigue,
     plan,
   };
+};
+
+export const fetchActivitiesPreview = async (
+  userId: string,
+  {
+    page = 1,
+    perPage = 20,
+  }: {
+    page?: number | null;
+    perPage?: number | null;
+  },
+) => {
+  const token = await prisma.stravaToken.findFirst({
+    where: { userId, isActive: true },
+  });
+
+  if (!token) throw new Error('Strava not connected');
+
+  const valid = await getValidAccessToken(token);
+
+  const { data } = await axios.get(
+    'https://www.strava.com/api/v3/athlete/activities',
+    {
+      headers: {
+        Authorization: `Bearer ${valid.accessToken}`,
+      },
+      params: {
+        per_page: perPage,
+        page,
+      },
+    },
+  );
+
+  const activities = data.map((a: any) => ({
+    id: a.id.toString(),
+    name: a.name,
+    distance: a.distance,
+    date: a.start_date,
+  }));
+
+  return {
+    page,
+    perPage,
+    count: activities.length,
+    hasNext: data.length === perPage,
+    activities,
+  };
+};
+
+export const getUserActivities = async (
+  userId: string,
+  {
+    page = 1,
+    perPage = 20,
+    fromDate,
+    toDate,
+    zone,
+  }: {
+    page?: number;
+    perPage?: number;
+    fromDate?: string;
+    toDate?: string;
+    zone?: 'z1' | 'z2' | 'z3' | 'z4' | 'z5';
+  },
+) => {
+  const skip = (page - 1) * perPage;
+
+  const where: any = {
+    userId,
+    zone,
+  };
+
+  if (fromDate || toDate) {
+    where.startDate = {};
+    if (fromDate) where.startDate.gte = new Date(fromDate);
+    if (toDate) where.startDate.lte = new Date(toDate);
+  }
+
+  const activities = await prisma.activity.findMany({
+    where,
+    orderBy: {
+      startDate: 'desc', // latest first
+    },
+    skip,
+    take: perPage,
+  });
+
+  const safeActivities = activities.map((a) => ({
+    ...a,
+    id: a.id.toString(),
+  }));
+
+  return {
+    page,
+    perPage,
+    count: safeActivities.length,
+    hasNext: safeActivities.length === perPage,
+    activities: safeActivities,
+  };
+};
+
+export const syncSelectedActivities = async (
+  userId: string,
+  activityIds: number[],
+) => {
+  const token = await prisma.stravaToken.findFirst({
+    where: { userId, isActive: true },
+  });
+
+  const valid = await getValidAccessToken(token);
+  let activityIdsToSync: number[] = [];
+  for (const id of activityIds) {
+    await syncActivity(id, valid.athleteId);
+    activityIdsToSync.push(id);
+  }
+
+  return {
+    message: 'Selected activities synced',
+    activityIds: activityIdsToSync,
+  };
+};
+
+export const deleteActivity = async (userId: string, activityId: string) => {
+  const activity = await prisma.activity.findFirst({
+    where: {
+      id: BigInt(activityId),
+      userId,
+    },
+  });
+
+  if (!activity) {
+    throw new Error('Activity not found');
+  }
+
+  const deletedActivity = await prisma.activity.delete({
+    where: {
+      id: BigInt(activityId),
+    },
+  });
+
+  return { message: 'Activity deleted successfully', deletedActivity };
 };

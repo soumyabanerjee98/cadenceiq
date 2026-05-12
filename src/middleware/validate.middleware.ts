@@ -1,18 +1,34 @@
+// src/middleware/validate.ts
 import type { Request, Response, NextFunction } from 'express';
 import type { ZodSchema } from 'zod';
+import type { ParsedQs } from 'qs';
+
+type Schema = {
+  body?: ZodSchema;
+  query?: ZodSchema;
+  params?: ZodSchema;
+};
 
 export const validate =
-  (schema: ZodSchema) => (req: Request, res: Response, next: NextFunction) => {
+  (schema: Schema) => (req: Request, res: Response, next: NextFunction) => {
     try {
-      const parsed = schema.parse(req.body);
+      if (schema.body) {
+        req.body = schema.body.parse(req.body);
+      }
 
-      req.body = parsed;
+      if (schema.query) {
+        req.query = schema.query.parse(req.query) as ParsedQs;
+      }
+
+      if (schema.params) {
+        req.params = schema.params.parse(req.params) as Record<string, string>;
+      }
 
       next();
     } catch (error: any) {
       return res.status(400).json({
         error: 'Validation failed',
-        details: error.errors,
+        details: error.message,
       });
     }
   };
