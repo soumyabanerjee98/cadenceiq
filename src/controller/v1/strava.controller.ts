@@ -23,6 +23,8 @@ export const stravaCallback = async (req: Request, res: Response) => {
 export const handleWebhook = async (req: any, res: any) => {
   if (req.method === 'GET') {
     const challenge = req.query['hub.challenge'];
+    console.log('Strava Event Webhook Subscription: ', challenge);
+
     return res.json({ 'hub.challenge': challenge });
   }
 

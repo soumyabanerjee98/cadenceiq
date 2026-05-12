@@ -53,6 +53,8 @@ export const stravaCallback = async ({
 };
 
 export const processWebhookEvent = async (event: StravaEvent) => {
+  console.log('Strava Event Webhook Call: ', event);
+
   const { aspect_type, object_type, object_id, owner_id } = event;
 
   if (object_type !== 'activity') return;
