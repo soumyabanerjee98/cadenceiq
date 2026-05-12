@@ -60,3 +60,14 @@ export const generateWeeklyPlan = (totalLoad: number) => {
     { day: 'Sun', type: 'recovery', load: easy * 0.2 },
   ];
 };
+
+export const estimateLoadFromDistance = (distanceKm: number) => {
+  // rough heuristic: 1km ≈ 5 load units
+  return distanceKm * 5;
+};
+
+export const getWeeksRemaining = (eventDate: Date) => {
+  const now = new Date();
+  const diff = eventDate.getTime() - now.getTime();
+  return Math.max(1, Math.ceil(diff / (7 * 24 * 60 * 60 * 1000)));
+};

@@ -1,11 +1,14 @@
 import { prisma } from '@/lib/prisma.js';
 import {
   adjustForFatigue,
+  estimateLoadFromDistance,
   generateWeeklyPlan,
   getTargetWeeklyLoad,
+  getWeeksRemaining,
 } from '@/utils/strava.util.js';
 import { getValidAccessToken, syncActivity } from './strava.service.js';
 import axios from 'axios';
+import { experienceMultiplier } from '@/config/strava.config.js';
 
 export const calculateFatigue = async (userId: string) => {
   const last7Days = new Date();
@@ -53,7 +56,21 @@ export const buildWeeklyPlan = async (userId: string, goal: Goal) => {
   const stats = await getWeeklyStats(userId);
   const fatigue = await calculateFatigue(userId);
 
-  const targetLoad = getTargetWeeklyLoad(stats.totalLoad, goal.experienceLevel);
+  let targetLoad;
+
+  if (goal.type === 'distance' && goal.targetDistance) {
+    targetLoad = estimateLoadFromDistance(goal.targetDistance);
+  } else if (goal.type === 'event' && goal.eventDate) {
+    const weeks = getWeeksRemaining(goal.eventDate);
+    const targetEventLoad = stats.totalLoad * 1.5;
+
+    const increment = (targetEventLoad - stats.totalLoad) / weeks;
+    targetLoad = stats.totalLoad + increment;
+  } else {
+    targetLoad = getTargetWeeklyLoad(stats.totalLoad, goal.experienceLevel);
+  }
+
+  targetLoad *= experienceMultiplier[goal.experienceLevel];
 
   const adjustedLoad = adjustForFatigue(targetLoad, fatigue);
 

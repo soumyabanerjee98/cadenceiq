@@ -12,12 +12,18 @@ export const intensityFactor = {
   z1: 1,
   z2: 2,
   z3: 3,
-  z4: 4,
-  z5: 5,
+  z4: 5,
+  z5: 7,
 };
 
 export const progressionRate = {
   beginner: 0.05, // 5%
   intermediate: 0.08, // 8%
   advanced: 0.1, // 10%
+};
+
+export const experienceMultiplier = {
+  beginner: 0.8,
+  intermediate: 1,
+  advanced: 1.2,
 };
