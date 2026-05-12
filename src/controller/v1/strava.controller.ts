@@ -34,7 +34,7 @@ export const handleWebhook = async (req: any, res: any) => {
   const isValid = verifyStravaSignature(req.rawBody, signature);
 
   if (!isValid) {
-    console.error('❌ Invalid Strava signature');
+    console.error('Invalid Strava signature');
     return res.status(403).send('Invalid signature');
   }
 

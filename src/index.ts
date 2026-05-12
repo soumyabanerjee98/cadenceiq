@@ -2,6 +2,7 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import { validateApiKey } from './middleware/apiKey.middleware.js';
+import routes from '@/routes/index.js';
 
 const app = express();
 
@@ -20,7 +21,7 @@ app.use(
   }),
 );
 
-app.use('/api', validateApiKey); // apply routes
+app.use('/api', validateApiKey, routes); // apply routes
 
 app.get('/health', (_, res) => {
   res.json({ status: 'OK' });
