@@ -4,8 +4,8 @@ import { Router } from 'express';
 
 const router = Router();
 
-router.post('/connect', authMiddleware, stravaController.connectStrava);
-router.post('/callback', stravaController.stravaCallback);
+router.get('/connect', authMiddleware, stravaController.connectStrava);
+router.get('/callback', stravaController.stravaCallback);
 router.all('/webhook', stravaController.handleWebhook);
 
 export default router;

@@ -1,3 +1,4 @@
+import { EXCLUDED_PATHS } from '@/config/route.exclusion.js';
 import type { Request, Response, NextFunction } from 'express';
 
 export const validateApiKey = (
@@ -5,6 +6,14 @@ export const validateApiKey = (
   res: Response,
   next: NextFunction,
 ) => {
+  const isExcluded = EXCLUDED_PATHS.some((path) =>
+    req.path.startsWith(path.replace('/api', '')),
+  );
+
+  if (isExcluded) {
+    return next();
+  }
+
   const apiKey = req.headers['x-api-key'];
 
   if (!apiKey || apiKey !== process.env.API_KEY) {

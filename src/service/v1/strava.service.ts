@@ -11,7 +11,7 @@ export const connectStrava = ({ userId }: { userId: string }) => {
     `&redirect_uri=${process.env.STRAVA_REDIRECT_URI}` +
     `&scope=activity:read_all` +
     `&state=${state}`;
-
+  console.log('Strava Connection URL: ' + url);
   return url;
 };
 
@@ -22,6 +22,7 @@ export const stravaCallback = async ({
   code: string;
   userId: string;
 }) => {
+  console.log('Strava Callback: ' + code + ' ' + userId);
   const response = await axios.post('https://www.strava.com/oauth/token', {
     client_id: process.env.STRAVA_CLIENT_ID,
     client_secret: process.env.STRAVA_CLIENT_SECRET,

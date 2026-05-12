@@ -1,5 +1,6 @@
 import { verifyStravaSignature } from '@/lib/verifyStravaSign.js';
 import { stravaService } from '@/service/index.js';
+import { serialize } from '@/utils/serialise.util.js';
 import type { Request, Response } from 'express';
 
 export const connectStrava = (req: Request & { user?: any }, res: Response) => {
@@ -16,7 +17,7 @@ export const stravaCallback = async (req: Request, res: Response) => {
     code: code as string,
     userId,
   });
-  return res.json(result);
+  return res.json(serialize(result));
 };
 
 export const handleWebhook = async (req: any, res: any) => {
