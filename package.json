@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "test": "test",
-    "start": "node --watch src/index.ts",
+    "start": "tsx --watch src/index.ts",
     "prisma:generate": "npx prisma generate",
     "prisma:migrate": "npx prisma migrate dev",
     "prisma:update_db": "npx prisma generate && npx prisma migrate dev"
@@ -25,6 +25,7 @@
     "@prisma/client": "^7.8.0",
     "@prisma/config": "^7.8.0",
     "@types/node": "^25.6.2",
+    "axios": "^1.16.0",
     "bcrypt": "^6.0.0",
     "cors": "^2.8.6",
     "express": "^5.2.1",
@@ -37,6 +38,7 @@
     "@types/express": "^5.0.6",
     "@types/jsonwebtoken": "^9.0.10",
     "dotenv": "^17.4.2",
-    "prisma": "^7.8.0"
+    "prisma": "^7.8.0",
+    "tsx": "^4.21.0"
   }
 }
