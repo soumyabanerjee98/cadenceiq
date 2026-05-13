@@ -27,7 +27,7 @@ export const verifyStravaSignature = (
   }
 
   //  Build signed payload
-  const payload = `${timestamp}.${rawBody.toString('utf-8')}`;
+  const payload = Buffer.concat([Buffer.from(timestamp + '.'), rawBody]);
   console.log("HMAC payload: ", payload);
 
   //  Generate HMAC
