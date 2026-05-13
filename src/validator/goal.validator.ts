@@ -12,4 +12,5 @@ export const goalInputSchema = z.object({
       load: z.number(),
     }),
   ),
+  adjustedPlan: z.boolean(),
 });

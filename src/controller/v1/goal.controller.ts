@@ -6,7 +6,8 @@ export const createGoal = async (
   res: Response,
 ) => {
   const userId = req.user?.id;
-  const { currentLoad, targetLoad, fatigue, adjustedLoad, plan } = req.body;
+  const { currentLoad, targetLoad, fatigue, adjustedLoad, plan, adjustedPlan } =
+    req.body;
 
   const result = await goalService.createWeeklyGoal(userId, {
     currentLoad,
@@ -14,6 +15,7 @@ export const createGoal = async (
     fatigue,
     adjustedLoad,
     plan,
+    adjustedPlan,
   });
 
   return res.json(result);

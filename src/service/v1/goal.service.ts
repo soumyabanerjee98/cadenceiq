@@ -8,9 +8,11 @@ export const createWeeklyGoal = async (
     fatigue: number;
     adjustedLoad: number;
     plan: Plan[];
+    adjustedPlan: boolean;
   },
 ) => {
-  const { currentLoad, targetLoad, fatigue, adjustedLoad, plan } = input;
+  const { currentLoad, targetLoad, fatigue, adjustedLoad, plan, adjustedPlan } =
+    input;
   const weekStart = new Date();
   const weekEnd = new Date();
   weekEnd.setDate(weekStart.getDate() + 7);
@@ -33,8 +35,8 @@ export const createWeeklyGoal = async (
       day: p.day,
       type: p.type,
       load: p.load,
-      version: 1,
-      isAdjusted: false,
+      version: adjustedPlan ? 2 : 1,
+      isAdjusted: adjustedPlan,
     })),
   });
 
