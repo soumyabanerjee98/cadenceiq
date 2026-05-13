@@ -19,3 +19,9 @@ export const coachInsightsSchema = z.object({
     adjustments: z.array(z.string()),
   }),
 });
+
+export const dailyInsightsSchema = z.object({
+  fatigueScore: z.number(),
+  strainScore: z.number(),
+  commentary: z.string(),
+});

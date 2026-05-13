@@ -13,7 +13,7 @@ export const getWeeklyPlan = async (
   req: Request & { user?: any },
   res: Response,
 ) => {
-  const userId = req.user.id;
+  const userId = req.user.userId;
 
   const goal = req.body;
 
@@ -26,7 +26,7 @@ export const getAIInsights = async (
   req: Request & { user?: any },
   res: Response,
 ) => {
-  const userId = req.user.id;
+  const userId = req.user.userId;
   const { retries, ...goal } = req.body;
 
   const insights = await getAICoachInsights(userId, goal, retries);
@@ -37,7 +37,7 @@ export const getAIAdjustment = async (
   req: Request & { user?: any },
   res: Response,
 ) => {
-  const userId = req.user.id;
+  const userId = req.user.userId;
   const { retries, ...goal } = req.body;
   const adjustments = await getAIPlanAdjustment(userId, goal, retries);
   return res.json(adjustments);
@@ -47,7 +47,7 @@ export const previewActivities = async (
   req: Request & { user?: any },
   res: Response,
 ) => {
-  const userId = req.user.id;
+  const userId = req.user.userId;
 
   const { page: pageQuery, perPage: perPageQuery } = req.query;
   const page = Array.isArray(pageQuery)
@@ -71,7 +71,7 @@ export const previewActivities = async (
 
 export const getActivities = async (req: any, res: any) => {
   try {
-    const userId = req.user.id;
+    const userId = req.user.userId;
     const query = req.query;
     const page = Number(query.page) || 1;
     const perPage = Number(query.perPage) || 20;
@@ -94,7 +94,7 @@ export const syncActivities = async (
   req: Request & { user?: any },
   res: Response,
 ) => {
-  const userId = req.user.id;
+  const userId = req.user.userId;
 
   const { activityIds } = req.body;
   const result = await syncSelectedActivities(userId, activityIds);
@@ -106,7 +106,7 @@ export const removeActivity = async (
   req: Request & { user?: any },
   res: Response,
 ) => {
-  const userId = req.user.id;
+  const userId = req.user.userId;
   const { activityId } = req.params;
   const result = await deleteActivity(userId, activityId as string);
   return res.json(result);

@@ -13,4 +13,5 @@ export const goalInputSchema = z.object({
     }),
   ),
   adjustedPlan: z.boolean(),
+  startDate: z.string().optional(),
 });

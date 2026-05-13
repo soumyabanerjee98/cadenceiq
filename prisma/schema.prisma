@@ -26,8 +26,13 @@ model User {
 
   stravaToken StravaToken?
   activities  Activity[]
-  currentGoal Goal?
-  insight     DailyInsight?
+
+  currentGoalId String?  @unique
+  currentGoal   Goal?    @relation("CurrentGoal", fields: [currentGoalId], references: [id])
+
+  goals Goal[] @relation("UserGoals")
+
+  insights DailyInsight[]
 }
 
 model StravaToken {
@@ -80,10 +85,12 @@ model Activity {
 }
 
 model Goal {
-  id            String   @id @default(uuid())
+  id String @id @default(uuid())
 
-  userId        String   @unique
-  user          User     @relation(fields: [userId], references: [id])
+  userId String
+  user   User   @relation("UserGoals", fields: [userId], references: [id])
+
+  currentForUser User? @relation("CurrentGoal")
 
   weekStart     DateTime
   weekEnd       DateTime
@@ -132,7 +139,7 @@ model DailyInsight {
   goalId    String
   goal      Goal     @relation(fields: [goalId], references: [id])
 
-  userId    String   @unique
+  userId    String
   user      User     @relation(fields: [userId], references: [id])
 
   date      DateTime
@@ -150,6 +157,7 @@ model DailyInsight {
 
   createdAt     DateTime @default(now())
 
+  @@unique([userId, date]) 
   @@index([goalId])
   @@index([userId])
   @@index([date])
