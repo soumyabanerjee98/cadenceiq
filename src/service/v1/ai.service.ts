@@ -18,7 +18,7 @@ export const callAI = async (
   temperature: number,
 ) => {
   const completion = await groq.chat.completions.create({
-    model: 'openai/gpt-oss-120b',
+    model: process.env.GROQ_AI_MODEL!,
     messages,
     temperature,
   });
