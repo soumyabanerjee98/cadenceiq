@@ -241,15 +241,9 @@ TRAINING RULES
    - 1.1–1.3 = accumulating fatigue
    - > 1.3 = high fatigue risk
 
-4. Always mention:
-   - plannedLoad
-   - actualLoad
-   - deviation
-   - status
+4. Make the commentary actionable and specific to the user's data. Don't give generic advice. For example, if the user is overtrained, suggest specific adjustments like "reduce tomorrow's load by 15%" rather than vague statements like "consider reducing load". Also make it clear that the insights are based on the deviation and status, and how they relate to fatigue risk. For example, if the user is undertrained but has low fatigue, you might say "Your actual load is 25% below your planned load, which is currently keeping your fatigue low. You could consider increasing your load by 10% tomorrow to get closer to your target without risking overtraining." Be positive and enthusiastic in your commentary, even when suggesting adjustments. For example, if the user is overtrained, you might say "Your actual load is 30% above your planned load, which is a sign of overtraining. To help you recover and come back stronger, I recommend reducing your load by 20% tomorrow. This will allow your body to adapt and improve for future sessions!"
 
-5. Make the commentary actionable and specific to the user's data. Don't give generic advice. For example, if the user is overtrained, suggest specific adjustments like "reduce tomorrow's load by 15%" rather than vague statements like "consider reducing load".
-
-6. Do NOT suggest changing the weekly plan.
+5. Do NOT suggest changing the weekly plan.
 
 ========================
 OUTPUT FORMAT (STRICT JSON ONLY)

@@ -32,7 +32,7 @@ export const getDailyInsights = async (userId: string, date: Date) => {
   const goal = await prisma.goal.findFirst({
     where: {
       userId,
-      weekStart: { lte: start },
+      weekStart: { lte: end },
       weekEnd: { gte: start },
     },
     include: {
@@ -49,21 +49,30 @@ export const getDailyInsights = async (userId: string, date: Date) => {
   // 3. Get correct plan for day
   const dayName = getDayName(start);
 
-  const plan = goal.plan.find((p) => p.day === dayName);
+  const plan = goal.plan
+    .filter((p) => p.day === dayName)
+    .sort((a, b) => b.version - a.version)[0];
 
   const plannedLoad = plan?.load || 0;
 
   // 4. Deviation logic
   const deviation = totalActualLoad - plannedLoad;
 
-  const threshold = plannedLoad * 0.2;
+  let status: 'overtrained' | 'undertrained' | 'on_track';
 
-  const status =
-    deviation > threshold
-      ? 'overtrained'
-      : deviation < -threshold
-        ? 'undertrained'
-        : 'on_track';
+  if (plannedLoad === 0) {
+    // rest day logic
+    status = totalActualLoad > 0 ? 'overtrained' : 'on_track';
+  } else {
+    const threshold = plannedLoad * 0.2;
+
+    status =
+      deviation > threshold
+        ? 'overtrained'
+        : deviation < -threshold
+          ? 'undertrained'
+          : 'on_track';
+  }
 
   // 5. AI insights
   const ai = await generateDailyInsights(
