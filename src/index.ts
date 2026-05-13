@@ -13,6 +13,8 @@ app.use(
   }),
 );
 
+app.use('/api/strava/webhook', express.raw({ type: 'application/json' }));
+
 app.use(
   express.json({
     verify: (req: any, res, buf) => {

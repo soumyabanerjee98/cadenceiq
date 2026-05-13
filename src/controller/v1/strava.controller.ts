@@ -36,23 +36,35 @@ export const handleWebhook = async (req: any, res: any) => {
   }
 
   const signature = req.headers['x-strava-signature'];
+  console.log('Receiving signature for strava webhook: ', signature);
 
-  if (!signature || !req.rawBody) {
+  if (!signature) {
+    console.error('Missing Strava signature for webhook event');
     return res.status(400).send('Missing signature');
   }
 
-  const isValid = verifyStravaSignature(req.rawBody, signature);
+  //  rawBody is Buffer because of express.raw()
+  const rawBody = req.body;
+  console.log(
+    'Raw body for strava signature verification: ',
+    rawBody.toString(),
+  );
+
+  const isValid = verifyStravaSignature(rawBody, signature);
 
   if (!isValid) {
-    console.error('Invalid Strava signature');
+    console.error('Invalid Strava signature for webhook event');
     return res.status(403).send('Invalid signature');
   }
 
-  const event = req.body;
+  //  Parse JSON manually
+  const event = JSON.parse(rawBody.toString());
 
-  const activityId = await stravaService.processWebhookEvent(event);
+  console.log('Strava Webhook Event:', event);
 
-  return res.json(activityId);
+  const result = await stravaService.processWebhookEvent(event);
+
+  return res.json({ success: true, result });
 };
 
 export const disconnectStrava = async (
