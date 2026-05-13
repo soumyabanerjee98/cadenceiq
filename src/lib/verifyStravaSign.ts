@@ -35,6 +35,8 @@ export const verifyStravaSignature = (
     .update(payload)
     .digest('hex');
 
+  console.log("signatures: sign, expected => ", signature, expected);
+
   //  Constant-time compare
   return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected));
 };
