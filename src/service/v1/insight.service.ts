@@ -23,6 +23,10 @@ export const getDailyInsights = async (userId: string, date: Date) => {
     },
   });
 
+  if (activities.length === 0) {
+    throw new Error('No activities found for this date');
+  }
+
   const totalActualLoad = activities.reduce(
     (sum, a) => sum + (a.trainingLoad || 0),
     0,
