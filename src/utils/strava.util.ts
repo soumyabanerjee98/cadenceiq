@@ -44,7 +44,7 @@ export const distributeLoad = (totalLoad: number) => {
   };
 };
 
-export const generateWeeklyPlan = (totalLoad: number) => {
+export const generateWeeklyPlan = (totalLoad: number): Plan[] => {
   const { easy, hard } = distributeLoad(totalLoad);
 
   return [

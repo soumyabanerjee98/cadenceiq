@@ -129,10 +129,16 @@ type Goal = {
   experienceLevel: 'beginner' | 'intermediate' | 'advanced';
 };
 
+type Plan = {
+  day: string;
+  type: 'rest' | 'hard' | 'easy' | 'long' | 'recovery';
+  load: number;
+};
+
 type CoachInput = {
   currentLoad: number;
   targetLoad: number;
   fatigue: number;
-  plan: any[];
-  goal: any;
+  plan: Plan[];
+  goal: Goal;
 };
