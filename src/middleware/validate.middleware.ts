@@ -1,7 +1,6 @@
 // src/middleware/validate.ts
 import type { Request, Response, NextFunction } from 'express';
 import type { ZodError, ZodSchema } from 'zod';
-import type { ParsedQs } from 'qs';
 
 type Schema = {
   body?: ZodSchema;
@@ -17,7 +16,8 @@ export const validate =
       }
 
       if (schema.query) {
-        req.query = schema.query.parse(req.query) as ParsedQs;
+        const parsedQuery = schema.query.parse(req.query);
+        Object.assign(req.query, parsedQuery);
       }
 
       if (schema.params) {

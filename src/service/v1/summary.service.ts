@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma.js';
 import { updateTrainingState } from './strava.service.js';
+import { generateWeeklyAIInsight } from './ai.service.js';
 
 export const getWeeklySummary = async (userId: string, date: Date) => {
   const queryDate = new Date(date);
@@ -102,4 +103,56 @@ export const getWeeklySummary = async (userId: string, date: Date) => {
   });
 
   return summary;
+};
+
+export const getWeeklyAISummary = async (weeklySummaryId: string) => {
+  // 1. Fetch summary
+  const summary = await prisma.weeklySummary.findUnique({
+    where: { id: weeklySummaryId },
+  });
+
+  if (!summary) {
+    throw new Error('Weekly summary not found');
+  }
+
+  // 2. RETURN IF AI ALREADY EXISTS
+  if (summary.aiSummary) {
+    return summary;
+  }
+
+  // 3. Generate AI
+  const ai = await generateWeeklyAIInsight({
+    plannedLoad: summary.plannedLoad,
+    actualLoad: summary.actualLoad,
+    balance: summary.balance,
+    adherenceScore: summary.adherenceScore,
+    trend: summary.trend,
+    fatigueRisk: summary.fatigueRisk,
+  });
+
+  if (ai.type !== 'json') {
+    throw new Error('AI failed to generate weekly summary');
+  }
+
+  const data = ai.value as {
+    summary: string;
+    positives: string[];
+    issues: string[];
+    currentState: string;
+    recommendations: string[];
+  };
+
+  // 4. Store AI result
+  const updated = await prisma.weeklySummary.update({
+    where: { id: weeklySummaryId },
+    data: {
+      aiSummary: data.summary,
+      aiPositives: data.positives,
+      aiIssues: data.issues,
+      aiCurrentState: data.currentState,
+      aiRecommendations: data.recommendations,
+    },
+  });
+
+  return updated;
 };
