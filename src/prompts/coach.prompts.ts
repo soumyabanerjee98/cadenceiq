@@ -109,6 +109,8 @@ USER DATA
 Current Load: ${input.currentLoad}
 Target Load: ${input.targetLoad}
 Fatigue: ${input.fatigue}
+Fitness: ${input.fitness}
+Readiness: ${input.readiness}
 
 Goal:
 ${JSON.stringify(input.goal)}
@@ -207,9 +209,9 @@ USER DATA
 Planned Load: ${input.plannedLoad}
 Actual Load: ${input.totalActualLoad}
 Deviation: ${input.deviation}
-ATL: ${input.atl}
-CTL: ${input.ctl}
-TSB: ${input.tsb}
+Fatigue: ${input.atl}
+Fitness: ${input.ctl}
+Readiness: ${input.tsb}
 Status: ${input.status}
 
 ========================

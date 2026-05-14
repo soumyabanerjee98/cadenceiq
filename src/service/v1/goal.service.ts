@@ -52,7 +52,7 @@ export const createWeeklyGoal = async (
       },
     });
 
-    // 2. create plan (use create instead of createMany for better control)
+    // 2. create plan (use createMany for better control)
     const plans = await tx.plan.createMany({
       data: plan.map((p) => ({
         goalId: goal.id,
