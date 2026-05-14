@@ -123,6 +123,9 @@ export const generateDailyInsights = async (
     totalActualLoad: number;
     deviation: number;
     status: 'overtrained' | 'undertrained' | 'on_track';
+    atl: number | null;
+    ctl: number | null;
+    tsb: number | null;
   },
   maxRetries: number = 0,
 ) => {

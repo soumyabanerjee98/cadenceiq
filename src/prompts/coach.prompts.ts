@@ -190,6 +190,9 @@ export const buildDailyInsight = (input: {
   plannedLoad: number;
   totalActualLoad: number;
   deviation: number;
+  atl: number | null;
+  ctl: number | null;
+  tsb: number | null;
   status: 'overtrained' | 'undertrained' | 'on_track';
 }) => {
   return `
@@ -204,6 +207,9 @@ USER DATA
 Planned Load: ${input.plannedLoad}
 Actual Load: ${input.totalActualLoad}
 Deviation: ${input.deviation}
+ATL: ${input.atl}
+CTL: ${input.ctl}
+TSB: ${input.tsb}
 Status: ${input.status}
 
 ========================

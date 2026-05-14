@@ -27,3 +27,9 @@ export const experienceMultiplier = {
   intermediate: 1,
   advanced: 1.2,
 };
+
+const ATL_DAYS = 7;
+const CTL_DAYS = 42;
+
+export const ATL_ALPHA = 2 / (ATL_DAYS + 1);
+export const CTL_ALPHA = 2 / (CTL_DAYS + 1);

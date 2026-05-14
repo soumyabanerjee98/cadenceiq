@@ -139,6 +139,8 @@ type CoachInput = {
   currentLoad: number;
   targetLoad: number;
   fatigue: number;
+  fitness: number;
+  readiness: number;
   plan: Plan[];
   goal: Goal;
 };

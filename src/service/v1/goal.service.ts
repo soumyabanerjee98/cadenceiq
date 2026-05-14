@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma.js';
+import { updateTrainingState } from './strava.service.js';
 
 const getWeekStart = (date: Date) => {
   const d = new Date(date);
@@ -12,7 +13,6 @@ export const createWeeklyGoal = async (
   input: {
     currentLoad: number;
     targetLoad: number;
-    fatigue: number;
     adjustedLoad: number;
     plan: Plan[];
     adjustedPlan: boolean;
@@ -22,7 +22,6 @@ export const createWeeklyGoal = async (
   const {
     currentLoad,
     targetLoad,
-    fatigue,
     adjustedLoad,
     plan,
     adjustedPlan,
@@ -34,6 +33,8 @@ export const createWeeklyGoal = async (
   const weekEnd = new Date(weekStart);
   weekEnd.setDate(weekStart.getDate() + 6);
 
+  const { atl, ctl, tsb } = await updateTrainingState(userId, weekStart);
+
   return await prisma.$transaction(async (tx) => {
     // 1. create goal (unique constraint handles duplicates)
     const goal = await tx.goal.create({
@@ -42,7 +43,10 @@ export const createWeeklyGoal = async (
         currentLoad,
         targetLoad,
         adjustedLoad,
-        fatigue,
+        fatigue: atl, // use ATL as fatigue proxy
+        atl,
+        ctl,
+        tsb,
         weekStart,
         weekEnd,
       },

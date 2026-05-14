@@ -6,24 +6,14 @@ import {
   getTargetWeeklyLoad,
   getWeeksRemaining,
 } from '@/utils/strava.util.js';
-import { getValidAccessToken, syncActivity } from './strava.service.js';
+import {
+  getValidAccessToken,
+  syncActivity,
+  updateTrainingState,
+} from './strava.service.js';
 import axios from 'axios';
 import { experienceMultiplier } from '@/config/strava.config.js';
 import { adjustPlanWithAI, generateCoachInsights } from './ai.service.js';
-
-export const calculateFatigue = async (userId: string) => {
-  const last7Days = new Date();
-  last7Days.setDate(last7Days.getDate() - 7);
-
-  const activities = await prisma.activity.findMany({
-    where: {
-      userId,
-      startDate: { gte: last7Days },
-    },
-  });
-
-  return activities.reduce((sum, a) => sum + (a.trainingLoad || 0), 0);
-};
 
 export const getWeeklyStats = async (userId: string) => {
   const last7Days = new Date();
@@ -55,7 +45,7 @@ export const getWeeklyStats = async (userId: string) => {
 
 export const buildWeeklyPlan = async (userId: string, goal: Goal) => {
   const stats = await getWeeklyStats(userId);
-  const fatigue = await calculateFatigue(userId);
+  const { atl, ctl, tsb } = await updateTrainingState(userId, new Date());
 
   let targetLoad;
 
@@ -73,7 +63,7 @@ export const buildWeeklyPlan = async (userId: string, goal: Goal) => {
 
   targetLoad *= experienceMultiplier[goal.experienceLevel];
 
-  const adjustedLoad = adjustForFatigue(targetLoad, fatigue);
+  const adjustedLoad = adjustForFatigue(targetLoad, tsb);
 
   const plan = generateWeeklyPlan(adjustedLoad);
 
@@ -81,7 +71,9 @@ export const buildWeeklyPlan = async (userId: string, goal: Goal) => {
     currentLoad: stats.totalLoad,
     targetLoad,
     adjustedLoad,
-    fatigue,
+    fatigue: atl,
+    fitness: ctl,
+    readiness: tsb,
     plan,
   };
 };
@@ -96,6 +88,8 @@ export const getAICoachInsights = async (
     currentLoad: planData.currentLoad,
     targetLoad: planData.targetLoad,
     fatigue: planData.fatigue,
+    fitness: planData.fitness,
+    readiness: planData.readiness,
     plan: planData.plan,
     goal,
   };
@@ -113,6 +107,8 @@ export const getAIPlanAdjustment = async (
     currentLoad: planData.currentLoad,
     targetLoad: planData.targetLoad,
     fatigue: planData.fatigue,
+    fitness: planData.fitness,
+    readiness: planData.readiness,
     plan: planData.plan,
     goal,
   };

@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma.js';
 import { generateDailyInsights } from './ai.service.js';
+import { updateTrainingState } from './strava.service.js';
 
 const getDayName = (date: Date) => {
   return date.toLocaleDateString('en-US', { weekday: 'short' }); // Mon, Tue
@@ -78,6 +79,8 @@ export const getDailyInsights = async (userId: string, date: Date) => {
           : 'on_track';
   }
 
+  const { atl, ctl, tsb } = await updateTrainingState(userId, start);
+
   // 5. AI insights
   const ai = await generateDailyInsights(
     {
@@ -85,6 +88,9 @@ export const getDailyInsights = async (userId: string, date: Date) => {
       totalActualLoad,
       deviation,
       status,
+      atl,
+      ctl,
+      tsb,
     },
     3,
   );

@@ -1,3 +1,4 @@
+import { ATL_ALPHA, CTL_ALPHA } from '@/config/strava.config.js';
 import { prisma } from '@/lib/prisma.js';
 import {
   calculateTrainingLoad,
@@ -86,6 +87,9 @@ export const updateGoalAfterActivity = async (
   activityDate: Date,
   previousLoad: number,
   newLoad: number,
+  atl?: number,
+  ctl?: number,
+  tsb?: number,
 ) => {
   const deltaLoad = newLoad - previousLoad;
 
@@ -117,8 +121,44 @@ export const updateGoalAfterActivity = async (
       currentLoad: updatedLoad,
       fatigue: updatedLoad,
       status,
+      atl: atl ?? null,
+      ctl: ctl ?? null,
+      tsb: tsb ?? null,
     },
   });
+};
+
+export const updateTrainingState = async (userId: string, date: Date) => {
+  // 1. Get today's total load
+  const activities = await prisma.activity.findMany({
+    where: {
+      userId,
+      startDate: {
+        gte: new Date(date.setHours(0, 0, 0, 0)),
+        lte: new Date(date.setHours(23, 59, 59, 999)),
+      },
+    },
+  });
+
+  const todayLoad = activities.reduce(
+    (sum, a) => sum + (a.trainingLoad || 0),
+    0,
+  );
+
+  // 2. Get latest state
+  const lastGoal = await prisma.goal.findFirst({
+    where: { userId },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  const prevATL = lastGoal?.atl || 0;
+  const prevCTL = lastGoal?.ctl || 0;
+
+  const atl = prevATL + ATL_ALPHA * (todayLoad - prevATL);
+  const ctl = prevCTL + CTL_ALPHA * (todayLoad - prevCTL);
+  const tsb = ctl - atl;
+
+  return { atl, ctl, tsb, todayLoad };
 };
 
 export const connectStrava = ({
@@ -266,15 +306,7 @@ export const syncActivity = async (activityId: number, athleteId: number) => {
       return { activityId: activity.id, skipped: true };
     }
 
-    const { zone, trainingLoad, source } = computeActivityMetrics(activity);
-
-    console.log(
-      zone,
-      trainingLoad,
-      source,
-      'computed metrics for activity: ',
-      activity.id,
-    );
+    const { zone, trainingLoad } = computeActivityMetrics(activity);
 
     const activityDate = new Date(activity.start_date);
 
@@ -321,12 +353,20 @@ export const syncActivity = async (activityId: number, athleteId: number) => {
       },
     });
 
+    const { atl, ctl, tsb } = await updateTrainingState(
+      token?.userId || '',
+      activityDate,
+    );
+
     //  Update goal (delta-safe)
     await updateGoalAfterActivity(
       token?.userId || '',
       activityDate,
       previousLoad,
       newLoad,
+      atl,
+      ctl,
+      tsb,
     );
 
     console.log('Activity synced: ', activity.id);

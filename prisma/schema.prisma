@@ -96,6 +96,10 @@ model Goal {
   adjustedLoad Float
   fatigue      Float
 
+  atl          Float? // short-term fatigue
+  ctl          Float? // long-term fitness
+  tsb          Float? // readiness
+
   status       String? // on_track, overtrained, undertrained
 
   createdAt    DateTime @default(now())

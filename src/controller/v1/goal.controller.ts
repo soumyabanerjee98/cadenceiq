@@ -9,7 +9,6 @@ export const createGoal = async (
   const {
     currentLoad,
     targetLoad,
-    fatigue,
     adjustedLoad,
     plan,
     adjustedPlan,
@@ -19,7 +18,6 @@ export const createGoal = async (
   const result = await goalService.createWeeklyGoal(userId, {
     currentLoad,
     targetLoad,
-    fatigue,
     adjustedLoad,
     plan,
     adjustedPlan,

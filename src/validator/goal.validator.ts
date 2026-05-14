@@ -3,7 +3,6 @@ import { z } from 'zod';
 export const goalInputSchema = z.object({
   currentLoad: z.number(),
   targetLoad: z.number(),
-  fatigue: z.number(),
   adjustedLoad: z.number(),
   plan: z.array(
     z.object({

@@ -29,9 +29,35 @@ export const getTargetWeeklyLoad = (currentLoad: number, level: string) => {
   );
 };
 
-export const adjustForFatigue = (targetLoad: number, fatigue: number) => {
-  if (fatigue > targetLoad * 1.5) {
-    return targetLoad * 0.7; // recovery week
+export const adjustForFatigue = (targetLoad: number, tsb: number) => {
+  if (tsb < -25) {
+    // very fatigued
+    return targetLoad * 0.6;
+  }
+
+  if (tsb < -15) {
+    // fatigued
+    return targetLoad * 0.75;
+  }
+
+  if (tsb < -5) {
+    // slight fatigue
+    return targetLoad * 0.9;
+  }
+
+  if (tsb >= -5 && tsb <= 10) {
+    // optimal zone
+    return targetLoad;
+  }
+
+  if (tsb > 10 && tsb <= 20) {
+    // fresh → can push
+    return targetLoad * 1.1;
+  }
+
+  if (tsb > 20) {
+    // too fresh → undertraining
+    return targetLoad * 1.25;
   }
 
   return targetLoad;
