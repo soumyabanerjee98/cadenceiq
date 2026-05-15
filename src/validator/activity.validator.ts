@@ -1,8 +1,8 @@
 import { z } from 'zod';
 
 export const goalSchema = z.object({
-  startDate: z.string().datetime(),
-  endDate: z.string().datetime(),
+  startDate: z.coerce.date(),
+  endDate: z.coerce.date(),
   experienceLevel: z.enum(['beginner', 'intermediate', 'advanced']),
   customGoalRequirements: z.string().optional(),
 });
@@ -16,7 +16,7 @@ export const getAIInsightsSchema = z.object({
   readiness: z.number().nonnegative(),
   plan: z.array(
     z.object({
-      date: z.string(),
+      date: z.coerce.date(),
       type: z.string(),
       targetLoad: z.number().nonnegative(),
       targetDistance: z.number().nonnegative(),

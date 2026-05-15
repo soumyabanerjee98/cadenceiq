@@ -64,28 +64,40 @@ export const updateUserPhysiology = async (userId: string) => {
   });
 };
 
-export const getWeeklyStats = async (userId: string) => {
-  const last7Days = new Date();
-  last7Days.setDate(last7Days.getDate() - 7);
+export const getMonthlyStats = async (userId: string) => {
+  const last30Days = new Date();
+  last30Days.setDate(last30Days.getDate() - 30);
 
   const activities = await prisma.activity.findMany({
     where: {
       userId,
-      startDate: { gte: last7Days },
+      startDate: {
+        gte: last30Days,
+      },
     },
   });
 
   const stats: StravaStats = {
     totalLoad: 0,
-    zoneDistribution: { z1: 0, z2: 0, z3: 0, z4: 0, z5: 0 },
+
+    zoneDistribution: {
+      z1: 0,
+      z2: 0,
+      z3: 0,
+      z4: 0,
+      z5: 0,
+    },
   };
 
-  for (const a of activities) {
-    stats.totalLoad += a.trainingLoad || 0;
+  for (const activity of activities) {
+    const load = activity.trainingLoad || 0;
 
-    if (a.zone) {
-      stats.zoneDistribution[a.zone as keyof typeof stats.zoneDistribution] +=
-        a.trainingLoad || 0;
+    stats.totalLoad += load;
+
+    if (activity.zone && activity.zone in stats.zoneDistribution) {
+      stats.zoneDistribution[
+        activity.zone as keyof typeof stats.zoneDistribution
+      ] += load;
     }
   }
 
@@ -93,7 +105,7 @@ export const getWeeklyStats = async (userId: string) => {
 };
 
 export const buildPlan = async (userId: string, goal: Goal) => {
-  const stats = await getWeeklyStats(userId);
+  const stats = await getMonthlyStats(userId);
   const { atl, ctl, tsb } = await updateTrainingState(userId, new Date());
 
   const aiGeneratedPlan = await generatePlanWithAI(
