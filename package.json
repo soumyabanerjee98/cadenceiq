@@ -1,5 +1,5 @@
 {
-  "name": "cyclanner-server",
+  "name": "cadenceiq",
   "version": "1.0.0",
   "description": "Server for Cyclanner app - Strava + AI Plan Generator",
   "main": "src/index.ts",
@@ -14,14 +14,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/soumyabanerjee98/cyclanner-server.git"
+    "url": "git+https://github.com/soumyabanerjee98/cadenceiq.git"
   },
   "author": "Soumya Banerjee",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/soumyabanerjee98/cyclanner-server/issues"
+    "url": "https://github.com/soumyabanerjee98/cadenceiq/issues"
   },
-  "homepage": "https://github.com/soumyabanerjee98/cyclanner-server#readme",
+  "homepage": "https://github.com/soumyabanerjee98/cadenceiq#readme",
   "dependencies": {
     "@prisma/adapter-pg": "^7.8.0",
     "@prisma/client": "^7.8.0",
