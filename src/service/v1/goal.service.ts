@@ -1,3 +1,4 @@
+import AppError from '@/handler/error.handler.js';
 import { prisma } from '@/lib/prisma.js';
 
 export const createGoal = async (
@@ -192,7 +193,7 @@ export const getCurrentGoal = async (userId: string) => {
   });
 
   if (!goal) {
-    throw new Error('No active goal found');
+    throw new AppError('No active goal found', 404);
   }
 
   return goal;
@@ -210,7 +211,7 @@ export const evaluateGoalCompletion = async (goalId: string) => {
   });
 
   if (!goal) {
-    throw new Error('Goal not found');
+    throw new AppError('Goal not found', 404);
   }
 
   // =========================
