@@ -19,7 +19,7 @@ router.post(
 );
 
 router.post(
-  '/get-ai-insights',
+  '/get-plan-insights',
   validate({ body: getAIInsightsSchema }),
   activityController.getAIInsights,
 );
