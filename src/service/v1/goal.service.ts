@@ -40,7 +40,10 @@ export const createGoal = async (
   } = input;
 
   const start = new Date(startDate);
+  start.setHours(0, 0, 0, 0);
+
   const end = new Date(endDate);
+  end.setHours(23, 59, 59, 999);
 
   return await prisma.$transaction(async (tx) => {
     // =========================
@@ -184,7 +187,7 @@ export const getCurrentGoal = async (userId: string) => {
         },
       },
 
-      weeklySummary: true,
+      goalSummary: true,
     },
   });
 
