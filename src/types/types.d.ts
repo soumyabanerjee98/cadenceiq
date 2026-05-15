@@ -166,3 +166,17 @@ type WeeklyAIInsight = {
   currentState: string; // where user stands now
   recommendations: string[]; // actionable tips
 };
+
+type ExperienceLevel = 'beginner' | 'intermediate' | 'advanced';
+
+type TrainingState = {
+  currentLoad: number;
+
+  targetLoad: number;
+
+  adjustedLoad: number;
+
+  fatigue: number; // ATL
+  fitness: number; // CTL
+  readiness: number; // TSB
+};

@@ -1,25 +1,17 @@
 import { z } from 'zod';
 
-export const generatedPlanSchema = z.object({
-  currentLoad: z.number().nonnegative(),
-  targetLoad: z.number().nonnegative(),
-  adjustedLoad: z.number().nonnegative(),
-  fatigue: z.number().nonnegative(),
-  fitness: z.number().nonnegative(),
-  readiness: z.number().nonnegative(),
-  plan: z.array(
-    z.object({
-      date: z.string(),
-      type: z.string(),
-      title: z.string(),
-      description: z.string(),
-      targetLoad: z.number().nonnegative(),
-      targetDistance: z.number().nonnegative(),
-      targetDuration: z.number().nonnegative(),
-      instructions: z.string(),
-    }),
-  ),
-});
+export const generatedPlanSchema = z.array(
+  z.object({
+    date: z.string(),
+    type: z.string(),
+    title: z.string(),
+    description: z.string(),
+    targetLoad: z.number().nonnegative(),
+    targetDistance: z.number().nonnegative(),
+    targetDuration: z.number().nonnegative(),
+    instructions: z.string(),
+  }),
+);
 
 export const coachInsightsSchema = z.object({
   insights: z.object({

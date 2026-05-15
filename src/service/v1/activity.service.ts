@@ -6,6 +6,8 @@ import {
 } from './strava.service.js';
 import axios from 'axios';
 import { generateCoachInsights, generatePlanWithAI } from './ai.service.js';
+import { deriveTrainingState } from '@/utils/strava.util.js';
+import { th } from 'zod/locales';
 
 export const updateUserPhysiology = async (userId: string) => {
   // 1. Max HR from all activities
@@ -108,13 +110,17 @@ export const buildPlan = async (userId: string, goal: Goal) => {
   const stats = await getMonthlyStats(userId);
   const { atl, ctl, tsb } = await updateTrainingState(userId, new Date());
 
+  const metrics = deriveTrainingState({
+    currentLoad: stats.totalLoad,
+    atl,
+    ctl,
+    tsb,
+    experienceLevel: goal.experienceLevel,
+  });
+
   const aiGeneratedPlan = await generatePlanWithAI(
     {
-      currentLoad: stats.totalLoad,
-      fatigue: atl,
-      fitness: ctl,
-      readiness: tsb,
-
+      metrics,
       startDate: goal.startDate,
       endDate: goal.endDate,
       experienceLevel: goal.experienceLevel,
@@ -123,7 +129,12 @@ export const buildPlan = async (userId: string, goal: Goal) => {
     3,
   );
 
-  return aiGeneratedPlan;
+  if (aiGeneratedPlan.type === 'string')
+    throw new Error(
+      'AI failed to generate a valid plan: ' + aiGeneratedPlan.value,
+    );
+  const plan = aiGeneratedPlan.value;
+  return { ...metrics, plan };
 };
 
 export const getAICoachInsights = async (

@@ -1,8 +1,5 @@
 export const buildPlanPrompt = (input: {
-  currentLoad: number;
-  fatigue: number;
-  fitness: number;
-  readiness: number;
+  metrics: TrainingState;
 
   startDate: Date;
   endDate: Date;
@@ -13,16 +10,23 @@ export const buildPlanPrompt = (input: {
   return `
 You are an elite cycling coach.
 
-Your task is to generate a structured cycling training plan.
+Your ONLY task is to generate a realistic structured cycling training plan.
 
 ========================
 ATHLETE DATA
 ========================
 
-Current Load: ${input.currentLoad}
-Fatigue (ATL): ${input.fatigue}
-Fitness (CTL): ${input.fitness}
-Readiness (TSB): ${input.readiness}
+Current Load: ${input.metrics.currentLoad}
+
+Target Load: ${input.metrics.targetLoad}
+
+Adjusted Load: ${input.metrics.adjustedLoad}
+
+Fatigue (ATL): ${input.metrics.fatigue}
+
+Fitness (CTL): ${input.metrics.fitness}
+
+Readiness (TSB): ${input.metrics.readiness}
 
 Experience Level:
 ${input.experienceLevel}
@@ -50,6 +54,7 @@ Requirements:
 - Structure should match athlete level
 
 Allowed session types:
+
 - rest
 - recovery
 - endurance
@@ -59,6 +64,36 @@ Allowed session types:
 - VO2
 - sprint
 - long
+
+========================
+PLAN DISTRIBUTION RULES
+========================
+
+Distribute adjustedLoad realistically across sessions.
+
+Rules:
+
+- 1-2 hard sessions maximum per week
+- no consecutive high-intensity sessions
+- long ride should be 25-35% of adjustedLoad
+- recovery/rest required after hard or long sessions
+- endurance/easy sessions should dominate volume
+- beginner plans should prioritize consistency and recovery
+- advanced plans may include higher intensity density
+- session progression should feel realistic
+
+========================
+IMPORTANT SAFETY RULES
+========================
+
+- NEVER create unsafe plans
+- NEVER overload consecutive days
+- NEVER generate excessive intensity
+- Prioritize recovery over aggression
+- Training must be sustainable
+- Respect fatigue and readiness
+- If fatigue is high, reduce intensity frequency
+- If readiness is low, increase recovery emphasis
 
 ========================
 OUTPUT RULES
@@ -72,52 +107,43 @@ OUTPUT RULES
 6. No unicode symbols
 7. Do NOT stringify JSON
 8. Return ONLY JSON object
+9. Return ONLY the plan array
 
 ========================
 OUTPUT FORMAT
 ========================
 
-{
-  "currentLoad": 0,
-  "targetLoad": 0,
-  "adjustedLoad": 0,
-
-  "fatigue": 0,
-  "fitness": 0,
-  "readiness": 0,
-
-  "plan": [
-    {
+[
+  {
       "date": "2026-05-15",
+
       "type": "endurance",
+
       "title": "Aerobic Base Ride",
+
       "description": "Steady endurance ride",
 
       "targetLoad": 75,
 
       "targetDistance": 40,
+
       "targetDuration": 90,
 
       "instructions": "Maintain conversational pace"
-    }
-  ]
-}
+    },
+    ...
+]
 
 ========================
 IMPORTANT
 ========================
 
-- targetLoad = planned block load
-- adjustedLoad = fatigue-adjusted target load
-- fatigue = ATL
-- fitness = CTL
-- readiness = TSB
-
-Ensure:
-- progression is realistic
-- no excessive overload
-- enough recovery exists
-- sessions align with stated goals
+- Use adjustedLoad as the primary planning load
+- Distribute training stress intelligently
+- Ensure recovery exists
+- Ensure progression is realistic
+- Ensure sessions align with stated goals
+- Ensure session loads are realistic relative to athlete level
 `;
 };
 

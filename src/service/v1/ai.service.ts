@@ -32,10 +32,7 @@ export const callAI = async (
 
 export const generatePlanWithAI = async (
   input: {
-    currentLoad: number;
-    fatigue: number;
-    fitness: number;
-    readiness: number;
+    metrics: TrainingState;
 
     startDate: Date;
     endDate: Date;
