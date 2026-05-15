@@ -2,10 +2,6 @@ import { prisma } from '@/lib/prisma.js';
 import { generateDailyInsights } from './ai.service.js';
 import { updateTrainingState } from './strava.service.js';
 
-const getDayName = (date: Date) => {
-  return date.toLocaleDateString('en-US', { weekday: 'short' }); // Mon, Tue
-};
-
 export const getDailyInsights = async (userId: string, date: Date) => {
   const start = new Date(date);
   start.setHours(0, 0, 0, 0);
@@ -17,10 +13,7 @@ export const getDailyInsights = async (userId: string, date: Date) => {
   const existingInsight = await prisma.dailyInsight.findFirst({
     where: {
       userId,
-      date: {
-        gte: start,
-        lte: end,
-      },
+      date: start,
     },
   });
 
@@ -52,28 +45,39 @@ export const getDailyInsights = async (userId: string, date: Date) => {
   const goal = await prisma.goal.findFirst({
     where: {
       userId,
-      weekStart: { lte: end },
-      weekEnd: { gte: start },
+      startDate: {
+        lte: end,
+      },
+      endDate: {
+        gte: start,
+      },
+      isActive: true,
     },
     include: {
       plan: {
-        orderBy: { version: 'desc' },
+        where: {
+          date: {
+            gte: start,
+            lte: end,
+          },
+        },
       },
     },
   });
 
   if (!goal) {
-    throw new Error('No goal found for this date');
+    throw new Error('No active goal found');
   }
 
   // 3. Get correct plan for day
-  const dayName = getDayName(start);
 
-  const plan = goal.plan
-    .filter((p) => p.day === dayName)
-    .sort((a, b) => b.version - a.version)[0];
+  const plan =
+    goal.plan.find((p) => {
+      const d = new Date(p.date);
+      return d >= start && d <= end;
+    }) || null;
 
-  const plannedLoad = plan?.load || 0;
+  const plannedLoad = plan?.targetLoad ?? 0;
 
   // 4. Deviation logic
   const deviation = totalActualLoad - plannedLoad;

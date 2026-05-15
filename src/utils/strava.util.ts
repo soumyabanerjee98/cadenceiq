@@ -23,46 +23,6 @@ export const calculateTrainingLoad = (
   return (duration / 60) * factor; // minutes * factor
 };
 
-export const getTargetWeeklyLoad = (currentLoad: number, level: string) => {
-  return (
-    currentLoad * (1 + progressionRate[level as keyof typeof progressionRate])
-  );
-};
-
-export const adjustForFatigue = (targetLoad: number, tsb: number) => {
-  if (tsb < -25) {
-    // very fatigued
-    return targetLoad * 0.6;
-  }
-
-  if (tsb < -15) {
-    // fatigued
-    return targetLoad * 0.75;
-  }
-
-  if (tsb < -5) {
-    // slight fatigue
-    return targetLoad * 0.9;
-  }
-
-  if (tsb >= -5 && tsb <= 10) {
-    // optimal zone
-    return targetLoad;
-  }
-
-  if (tsb > 10 && tsb <= 20) {
-    // fresh → can push
-    return targetLoad * 1.1;
-  }
-
-  if (tsb > 20) {
-    // too fresh → undertraining
-    return targetLoad * 1.25;
-  }
-
-  return targetLoad;
-};
-
 export const distributeLoad = (totalLoad: number) => {
   return {
     easy: totalLoad * 0.8,
@@ -70,30 +30,80 @@ export const distributeLoad = (totalLoad: number) => {
   };
 };
 
-export const generateWeeklyPlan = (totalLoad: number): Plan[] => {
-  const { easy, hard } = distributeLoad(totalLoad);
+export const calculateTargetLoad = (
+  currentLoad: number,
+  level: ExperienceLevel,
+) => {
+  const progression = progressionRate[level] || 0.06;
 
-  return [
-    { day: 'Mon', type: 'rest', load: 0 },
-
-    { day: 'Tue', type: 'hard', load: hard * 0.4 },
-    { day: 'Wed', type: 'easy', load: easy * 0.2 },
-
-    { day: 'Thu', type: 'hard', load: hard * 0.4 },
-    { day: 'Fri', type: 'easy', load: easy * 0.2 },
-
-    { day: 'Sat', type: 'long', load: easy * 0.4 },
-    { day: 'Sun', type: 'recovery', load: easy * 0.2 },
-  ];
+  return Number((currentLoad * (1 + progression)).toFixed(2));
 };
 
-export const estimateLoadFromDistance = (distanceKm: number) => {
-  // rough heuristic: 1km ≈ 5 load units
-  return distanceKm * 5;
+export const calculateAdjustedLoad = (targetLoad: number, tsb: number) => {
+  let factor = 1;
+
+  /*
+    TSB Interpretation
+
+    > 10      = very fresh
+    0 to 10   = ready
+    -10 to 0  = manageable fatigue
+    -20 to -10 = high fatigue
+    < -20     = excessive fatigue
+  */
+
+  if (tsb < -20) {
+    factor = 0.75;
+  } else if (tsb < -10) {
+    factor = 0.85;
+  } else if (tsb < 0) {
+    factor = 0.95;
+  } else if (tsb > 10) {
+    factor = 1.03;
+  }
+
+  return Number((targetLoad * factor).toFixed(2));
 };
 
-export const getWeeksRemaining = (eventDate: Date) => {
-  const now = new Date();
-  const diff = eventDate.getTime() - now.getTime();
-  return Math.max(1, Math.ceil(diff / (7 * 24 * 60 * 60 * 1000)));
+export const deriveTrainingState = ({
+  currentLoad,
+
+  atl,
+
+  ctl,
+
+  tsb,
+
+  experienceLevel,
+}: {
+  currentLoad: number;
+
+  atl: number;
+
+  ctl: number;
+
+  tsb?: number;
+
+  experienceLevel: ExperienceLevel;
+}): TrainingState => {
+  // fallback derivation
+  const readiness = tsb ?? Number((ctl - atl).toFixed(2));
+
+  const targetLoad = calculateTargetLoad(currentLoad, experienceLevel);
+
+  const adjustedLoad = calculateAdjustedLoad(targetLoad, readiness);
+
+  return {
+    currentLoad: Number(currentLoad.toFixed(2)),
+
+    targetLoad,
+
+    adjustedLoad,
+
+    fatigue: Number(atl.toFixed(2)),
+
+    fitness: Number(ctl.toFixed(2)),
+
+    readiness: Number(readiness.toFixed(2)),
+  };
 };

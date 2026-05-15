@@ -16,16 +16,10 @@ export const intensityFactor = {
   z5: 7,
 };
 
-export const progressionRate = {
-  beginner: 0.05, // 5%
-  intermediate: 0.08, // 8%
-  advanced: 0.1, // 10%
-};
-
-export const experienceMultiplier = {
-  beginner: 0.8,
-  intermediate: 1,
-  advanced: 1.2,
+export const progressionRate: Record<ExperienceLevel, number> = {
+  beginner: 0.06,
+  intermediate: 0.1,
+  advanced: 0.14,
 };
 
 const ATL_DAYS = 7;

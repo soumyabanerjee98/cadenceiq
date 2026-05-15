@@ -12,71 +12,71 @@ datasource db {
 }
 
 model User {
-  id          String   @id @default(uuid())
-  email       String?  @unique
-  password    String
-  name        String?
+  id       String  @id @default(uuid())
+  email    String? @unique
+  password String
+  name     String?
 
-  age         Int?
-  maxHR       Int?
-  restingHR   Int?
+  age       Int?
+  maxHR     Int?
+  restingHR Int?
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   stravaToken StravaToken?
   activities  Activity[]
 
   currentGoalId String?
 
-  goals     Goal[] @relation("UserGoals")
-  insights  DailyInsight[]
+  goals    Goal[]         @relation("UserGoals")
+  insights DailyInsight[]
 }
 
 model StravaToken {
-  id           String   @id @default(uuid())
+  id String @id @default(uuid())
 
-  userId       String   @unique
-  user         User     @relation(fields: [userId], references: [id])
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id])
 
   accessToken  String
   refreshToken String
   expiresAt    Int
-  athleteId    BigInt   @unique
-  isActive     Boolean  @default(true)
+  athleteId    BigInt  @unique
+  isActive     Boolean @default(true)
 
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  @@index([userId])
   @@unique([userId, isActive])
+  @@index([userId])
 }
 
 model Activity {
-  id                   BigInt  @id  // Strava activity ID
+  id BigInt @id // Strava activity ID
 
-  userId               String
-  user                 User    @relation(fields: [userId], references: [id])
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
 
-  name                 String?
-  type                 String?
+  name String?
+  type String?
 
-  distance             Float    // meters
-  movingTime           Int      // seconds
-  elapsedTime          Int?
+  distance    Float // meters
+  movingTime  Int // seconds
+  elapsedTime Int?
 
-  avgHR                Int?
-  maxHR                Int?
+  avgHR Int?
+  maxHR Int?
 
-  zone                 String?   // z1, z2, z3, z4, z5
-  trainingLoad         Float?    // computed metric
+  zone         String? // z1, z2, z3, z4, z5
+  trainingLoad Float? // computed metric
 
-  elevationGain        Float?
+  elevationGain Float?
 
-  startDate            DateTime
-  timezone             String?
+  startDate DateTime
+  timezone  String?
 
-  createdAt            DateTime @default(now())
+  createdAt DateTime @default(now())
 
   @@index([userId])
   @@index([startDate])
@@ -88,63 +88,83 @@ model Goal {
   userId String
   user   User   @relation("UserGoals", fields: [userId], references: [id])
 
-  weekStart DateTime
-  weekEnd   DateTime
+  startDate DateTime
+  endDate   DateTime
+
+  experienceLevel String
+
+  customGoalRequest String?
 
   currentLoad  Float
   targetLoad   Float
   adjustedLoad Float
-  fatigue      Float
 
-  atl          Float? // short-term fatigue
-  ctl          Float? // long-term fitness
-  tsb          Float? // readiness
+  fatigue   Float // ATL
+  fitness   Float // CTL
+  readiness Float // TSB
 
-  status       String? // on_track, overtrained, undertrained
+  status String? // on_track, overtrained, undertrained
 
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt 
+  isActive    Boolean @default(true)
+  isCompleted Boolean @default(false)
 
-  plan          Plan[]
-  insights      DailyInsight[]
-  weeklySummary WeeklySummary?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
+  plan        Plan[]
+  insights    DailyInsight[]
+  goalSummary GoalSummary?
+
+  @@unique([userId, startDate, endDate])
   @@index([userId])
-  @@index([weekStart])
-
-  @@unique([userId, weekStart])
+  @@index([startDate])
+  @@index([endDate])
+  @@index([isActive])
 }
 
 model Plan {
-  id        String   @id @default(uuid())
+  id String @id @default(uuid())
 
-  goalId    String
-  goal      Goal     @relation(fields: [goalId], references: [id])
+  goalId String
+  goal   Goal   @relation(fields: [goalId], references: [id])
 
-  day       String   // Mon, Tue...
-  type      String   // rest, easy, hard, long, recovery
+  date DateTime
+  type String // rest  recovery  endurance easy  tempo threshold VO2 sprint  long
 
-  load      Float
+  title       String
+  description String
 
-  version   Int      @default(1)
-  isAdjusted Boolean @default(false)
+  instructions String?
+
+  targetLoad Float
+
+  targetDistance Float?
+  targetDuration Int?
+
+  completed Boolean @default(false)
+
+  completedAt DateTime?
+
+  actualLoad Float?
 
   createdAt DateTime @default(now())
 
+  @@unique([goalId, date])
   @@index([goalId])
-  @@unique([goalId, day, version])
+  @@index([date])
+  @@index([type])
 }
 
 model DailyInsight {
-  id        String   @id @default(uuid())
+  id String @id @default(uuid())
 
-  goalId    String
-  goal      Goal     @relation(fields: [goalId], references: [id])
+  goalId String
+  goal   Goal   @relation(fields: [goalId], references: [id])
 
-  userId    String
-  user      User     @relation(fields: [userId], references: [id])
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
 
-  date      DateTime
+  date DateTime
 
   plannedLoad Float
   actualLoad  Float
@@ -164,20 +184,20 @@ model DailyInsight {
   @@index([date])
 }
 
-model WeeklySummary {
-  id        String   @id @default(uuid())
+model GoalSummary {
+  id String @id @default(uuid())
 
-  goalId    String   @unique
-  goal      Goal     @relation(fields: [goalId], references: [id])
+  goalId String @unique
+  goal   Goal   @relation(fields: [goalId], references: [id])
 
   plannedLoad Float
   actualLoad  Float
   balance     Float
 
   adherenceScore Float
-  trend         String // improving, overreaching, stable
+  trend          String // improving, overreaching, stable
 
-  fatigueRisk   String // low, medium, high
+  fatigueRisk String // low, medium, high
 
   aiSummary         String?
   aiPositives       Json?
@@ -185,5 +205,5 @@ model WeeklySummary {
   aiCurrentState    String?
   aiRecommendations Json?
 
-  createdAt     DateTime @default(now())
+  createdAt DateTime @default(now())
 }

@@ -2,7 +2,7 @@ import { prisma } from '@/lib/prisma.js';
 import { updateTrainingState } from './strava.service.js';
 import { generateWeeklyAIInsight } from './ai.service.js';
 
-export const getWeeklySummary = async (userId: string, date: Date) => {
+export const getGoalSummary = async (userId: string, date: Date) => {
   const queryDate = new Date(date);
   queryDate.setHours(0, 0, 0, 0);
 
@@ -12,16 +12,16 @@ export const getWeeklySummary = async (userId: string, date: Date) => {
   const goal = await prisma.goal.findFirst({
     where: {
       userId,
-      weekEnd: {
+      endDate: {
         lt: now, // only consider completed weeks
       },
     },
     orderBy: {
-      weekEnd: 'desc', // latest completed week
+      endDate: 'desc', // latest completed week
     },
     include: {
       plan: true,
-      weeklySummary: true,
+      goalSummary: true,
     },
   });
 
@@ -30,28 +30,15 @@ export const getWeeklySummary = async (userId: string, date: Date) => {
   }
 
   // 2. RETURN EXISTING SUMMARY
-  if (goal.weeklySummary) {
-    return goal.weeklySummary;
+  if (goal.goalSummary) {
+    return goal.goalSummary;
   }
 
   // 3. Planned Load
-  const plannedLoad = goal.plan.reduce((sum, p) => sum + p.load, 0);
+  const plannedLoad = goal.plan.reduce((sum, p) => sum + p.targetLoad, 0);
 
   // 4. Actual Load
-  const activities = await prisma.activity.findMany({
-    where: {
-      userId,
-      startDate: {
-        gte: goal.weekStart,
-        lte: goal.weekEnd,
-      },
-    },
-  });
-
-  const actualLoad = activities.reduce(
-    (sum, a) => sum + (a.trainingLoad || 0),
-    0,
-  );
+  const actualLoad = goal.plan.reduce((sum, a) => sum + (a.actualLoad || 0), 0);
 
   // 5. Balance
   const balance = actualLoad - plannedLoad;
@@ -70,7 +57,7 @@ export const getWeeklySummary = async (userId: string, date: Date) => {
   else trend = 'stable';
 
   // 8. Fatigue Risk (based on end of week)
-  const { tsb } = await updateTrainingState(userId, goal.weekEnd);
+  const { tsb } = await updateTrainingState(userId, goal.endDate);
 
   let fatigueRisk: 'low' | 'medium' | 'high';
 
@@ -79,7 +66,7 @@ export const getWeeklySummary = async (userId: string, date: Date) => {
   else fatigueRisk = 'low';
 
   // 9. Store summary
-  const summary = await prisma.weeklySummary.upsert({
+  const summary = await prisma.goalSummary.upsert({
     where: {
       goalId: goal.id,
     },
@@ -105,10 +92,10 @@ export const getWeeklySummary = async (userId: string, date: Date) => {
   return summary;
 };
 
-export const getWeeklyAISummary = async (weeklySummaryId: string) => {
+export const getAISummary = async (summaryId: string) => {
   // 1. Fetch summary
-  const summary = await prisma.weeklySummary.findUnique({
-    where: { id: weeklySummaryId },
+  const summary = await prisma.goalSummary.findUnique({
+    where: { id: summaryId },
   });
 
   if (!summary) {
@@ -143,8 +130,8 @@ export const getWeeklyAISummary = async (weeklySummaryId: string) => {
   };
 
   // 4. Store AI result
-  const updated = await prisma.weeklySummary.update({
-    where: { id: weeklySummaryId },
+  const updated = await prisma.goalSummary.update({
+    where: { id: summaryId },
     data: {
       aiSummary: data.summary,
       aiPositives: data.positives,

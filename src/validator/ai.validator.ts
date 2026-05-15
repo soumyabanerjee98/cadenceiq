@@ -1,22 +1,23 @@
-import { positive, z } from 'zod';
+import { z } from 'zod';
 
-export const adjustedPlanSchema = z.object({
-  adjustedPlan: z.array(
-    z.object({
-      day: z.string(),
-      type: z.string(),
-      load: z.number(),
-    }),
-  ),
-});
+export const generatedPlanSchema = z.array(
+  z.object({
+    date: z.string(),
+    type: z.string(),
+    title: z.string(),
+    description: z.string(),
+    targetLoad: z.number().nonnegative(),
+    targetDistance: z.number().nonnegative(),
+    targetDuration: z.number().nonnegative(),
+    instructions: z.string(),
+  }),
+);
 
 export const coachInsightsSchema = z.object({
   insights: z.object({
     summary: z.string(),
     risk: z.enum(['low', 'medium', 'high']),
-    issues: z.array(z.string()),
     recommendations: z.array(z.string()),
-    adjustments: z.array(z.string()),
   }),
 });
 

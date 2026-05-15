@@ -1,190 +1,281 @@
-export const buildCoachingPrompt = (input: CoachInput) => {
-  return `
-You are an expert cycling coach.
+export const buildPlanPrompt = (input: {
+  metrics: TrainingState;
 
-Your job is to analyze a user's training data and return STRICT MACHINE-READABLE JSON.
+  startDate: Date;
+  endDate: Date;
+
+  experienceLevel: string;
+  customGoalRequest: string;
+}) => {
+  return `
+You are an elite cycling coach.
+
+Your ONLY task is to generate a realistic structured cycling training plan.
 
 ========================
-USER DATA
+ATHLETE DATA
+========================
+
+Current Load: ${input.metrics.currentLoad}
+
+Target Load: ${input.metrics.targetLoad}
+
+Adjusted Load: ${input.metrics.adjustedLoad}
+
+Fatigue (ATL): ${input.metrics.fatigue}
+
+Fitness (CTL): ${input.metrics.fitness}
+
+Readiness (TSB): ${input.metrics.readiness}
+
+Experience Level:
+${input.experienceLevel}
+
+Training Period:
+${input.startDate.toISOString()} to ${input.endDate.toISOString()}
+
+Custom Goal Request:
+${input.customGoalRequest}
+
+========================
+PLAN REQUIREMENTS
+========================
+
+Generate a realistic cycling training plan.
+
+Requirements:
+
+- Include rest days
+- Include recovery sessions
+- Balance endurance and intensity
+- Progressively overload training
+- Avoid overtraining
+- Match athlete readiness and fatigue
+- Structure should match athlete level
+
+Allowed session types:
+
+- rest
+- recovery
+- endurance
+- easy
+- tempo
+- threshold
+- VO2
+- sprint
+- long
+
+========================
+PLAN DISTRIBUTION RULES
+========================
+
+Distribute adjustedLoad realistically across sessions.
+
+Rules:
+
+- 1-2 hard sessions maximum per week
+- no consecutive high-intensity sessions
+- long ride should be 25-35% of adjustedLoad
+- recovery/rest required after hard or long sessions
+- endurance/easy sessions should dominate volume
+- beginner plans should prioritize consistency and recovery
+- advanced plans may include higher intensity density
+- session progression should feel realistic
+
+========================
+IMPORTANT SAFETY RULES
+========================
+
+- NEVER create unsafe plans
+- NEVER overload consecutive days
+- NEVER generate excessive intensity
+- Prioritize recovery over aggression
+- Training must be sustainable
+- Respect fatigue and readiness
+- If fatigue is high, reduce intensity frequency
+- If readiness is low, increase recovery emphasis
+
+========================
+OUTPUT RULES
+========================
+
+1. Output MUST be valid raw JSON only
+2. No markdown
+3. No explanations
+4. ASCII characters only
+5. No smart quotes
+6. No unicode symbols
+7. Do NOT stringify JSON
+8. Return ONLY JSON object
+9. Return ONLY the plan array
+
+========================
+OUTPUT FORMAT
+========================
+
+[
+  {
+      "date": "2026-05-15",
+
+      "type": "endurance",
+
+      "title": "Aerobic Base Ride",
+
+      "description": "Steady endurance ride",
+
+      "targetLoad": 75,
+
+      "targetDistance": 40,
+
+      "targetDuration": 90,
+
+      "instructions": "Maintain conversational pace"
+    },
+    ...
+]
+
+========================
+IMPORTANT
+========================
+
+- Use adjustedLoad as the primary planning load
+- Distribute training stress intelligently
+- Ensure recovery exists
+- Ensure progression is realistic
+- Ensure sessions align with stated goals
+- Ensure session loads are realistic relative to athlete level
+`;
+};
+
+export const buildCoachingPrompt = (input: CoachInput) => {
+  return `
+You are an elite cycling performance coach.
+
+Your task is to analyze a cycling training plan and athlete condition.
+
+You MUST return STRICT MACHINE-READABLE JSON ONLY.
+
+========================
+ATHLETE METRICS
 ========================
 
 Current Load: ${input.currentLoad}
+
 Target Load: ${input.targetLoad}
-Fatigue Score: ${input.fatigue}
 
-Goal:
-${JSON.stringify(input.goal)}
+Adjusted Load: ${input.adjustedLoad}
 
-Weekly Plan:
+Fatigue (ATL): ${input.fatigue}
+
+Fitness (CTL): ${input.fitness}
+
+Readiness (TSB): ${input.readiness}
+
+========================
+TRAINING PLAN
+========================
+
 ${input.plan
-  .map((d) => `${d.day}: ${d.type} session with load ${d.load}`)
+  .map(
+    (d) => `
+Date: ${d.date}
+Type: ${d.type}
+Title: ${d.title}
+Description: ${d.description}
+Target Load: ${d.targetLoad}
+Target Distance: ${d.targetDistance || 0}
+Target Duration: ${d.targetDuration || 0}
+Instructions: ${d.instructions}
+`,
+  )
   .join('\n')}
 
 ========================
-CRITICAL OUTPUT RULES (MUST FOLLOW)
+ANALYSIS REQUIREMENTS
 ========================
 
-You MUST follow ALL rules below:
+Analyze the plan for:
 
-1. Output MUST be valid JSON (RFC 8259 compliant)
-2. Output MUST NOT include any extra text, explanation, or markdown
-3. Output MUST NOT include:
-   - smart quotes (“ ” ‘ ’)
-   - unicode symbols (≈, –, —, ×, ±, ->)
-   - non-breaking spaces
-   - ranges like "104–105" (must be "104-105")
-4. Use ONLY ASCII characters (0-9, a-z, punctuation)
-5. All numbers must be plain numeric values (no formatting symbols)
-6. Do NOT include commentary or reasoning
+1. Recovery balance
+2. Fatigue management
+3. Progression quality
+4. Endurance/intensity balance
+5. Risk of overtraining
+6. Realism for athlete readiness
+7. Session distribution quality
+8. Sustainability of training block
 
 ========================
-ANALYSIS RULES
+COACHING REQUIREMENTS
 ========================
 
-1. Detect:
-   - overtraining
-   - undertraining
-   - imbalance (hard vs easy vs recovery)
+Provide:
 
-2. Evaluate fatigue vs target load
+- concise summary
+- fatigue risk assessment
+- actionable recommendations
 
-3. Provide ONLY actionable training adjustments
-
-4. Avoid generic advice
+Recommendations must:
+- be specific
+- reference actual plan structure
+- avoid generic advice
 
 ========================
-OUTPUT FORMAT (STRICT JSON - NO DEVIATIONS)
+OUTPUT RULES (MANDATORY)
 ========================
 
-Return ONLY this JSON:
+1. Output MUST be valid raw JSON only
+2. No markdown
+3. No explanation
+4. ASCII characters only
+5. No unicode symbols
+6. No smart quotes
+7. Do NOT stringify JSON
+8. Do NOT wrap JSON in quotes
+9. No commentary outside JSON
+
+========================
+OUTPUT FORMAT
+========================
 
 {
   "insights": {
-    {
-      "summary": "",
-      "risk": "low" | "medium" | "high",
-      "issues": [],
-      "recommendations": [],
-      "adjustments": []
-    }
+    "summary": "",
+    "risk": "low",
+    "recommendations": [],
   }
 }
 
-  of type
+========================
+TYPE REQUIREMENTS
+========================
+
 {
   insights: {
     summary: string;
     risk: 'low' | 'medium' | 'high';
-    issues: string[];
     recommendations: string[];
-    adjustments: string[];
   }
 }
 
-Return ONLY raw JSON object.
-NO space inside object.
-STRICTLY REMOVE all backslashes.
-Do NOT wrap output in quotes.
-Do NOT stringify JSON.
-
 ========================
-HARD CONSTRAINT (IMPORTANT)
+IMPORTANT
 ========================
 
-If you cannot comply with the rules, output valid JSON anyway.
-Never break JSON format under any condition.
-`;
-};
+- risk must be:
+  low | medium | high
 
-export const buildAdjustmentPrompt = (input: CoachInput) => {
-  return `
-You are an expert cycling coach.
-
-You modify weekly training plans based on fatigue and load.
+- recommendations should:
+  tips for adherence to the plan, adjustments to improve balance, progression, or recovery, and any red flags to watch for. Don't ask for plan changes, but suggest how to approach the plan for best results. For example, if the plan has a high fatigue risk, you might say "This plan has a high fatigue risk due to the consecutive hard sessions on Wednesday and Thursday. To manage this, I recommend prioritizing recovery strategies such as good sleep, nutrition, and possibly incorporating an extra rest day or light recovery session on Friday to help your body adapt and reduce fatigue levels."
 
 ========================
-USER DATA
-========================
-
-Current Load: ${input.currentLoad}
-Target Load: ${input.targetLoad}
-Fatigue: ${input.fatigue}
-Fitness: ${input.fitness}
-Readiness: ${input.readiness}
-
-Goal:
-${JSON.stringify(input.goal)}
-
-Weekly Plan:
-${JSON.stringify(input.plan)}
-
-========================
-CRITICAL OUTPUT RULES (MANDATORY)
-========================
-
-You MUST obey ALL rules:
-
-1. Output MUST be valid JSON only (no markdown, no explanation)
-2. Output MUST contain ONLY ASCII characters
-3. NEVER use:
-   - smart quotes (“ ” ‘ ’)
-   - unicode symbols (≈, –, —, ±, ×, ->)
-   - non-breaking spaces
-4. NEVER output ranges like "104–105"
-   → ALWAYS use "104-105"
-5. ALL numbers must be plain integers or decimals
-6. DO NOT add commentary or text outside JSON
-7. DO NOT change number of days in plan
-8. DO NOT remove rest days
-9. DO NOT add new days
-
-========================
-TRAINING RULES
-========================
-
-- Adjust loads only within ±10-20%
-- If fatigue is HIGH → reduce overall load
-- If undertraining → increase load slightly
-- Keep structure realistic:
-  rest / easy / hard / long / recovery
-- Preserve training balance
-
-========================
-OUTPUT FORMAT (STRICT JSON ONLY)
-========================
-
-Return ONLY this JSON:
-
-{
-  "adjustedPlan": [
-    {
-      "day": "",
-      "type": "",
-      "load": 0
-    }
-  ]
-}
-  of type
-{
-  adjustedPlan: {
-    day: string;
-    type: string;
-    load: number;
-  }[];
-}
-
-Return ONLY raw JSON object.
-Do NOT wrap output in quotes.
-Do NOT stringify JSON.
-
-========================
-HARD GUARANTEE
+FAILSAFE
 ========================
 
 If constraints conflict:
-- prioritize JSON validity first
-- then training logic
-- never break format under any condition
+- prioritize valid JSON first
+- never break JSON format
+- never output markdown
 `;
 };
 
