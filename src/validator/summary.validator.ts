@@ -1,12 +1,12 @@
 import { z } from 'zod';
 
-export const getWeeklySummaryQuerySchema = z.object({
+export const getGoalSummaryQuerySchema = z.object({
   date: z
     .string()
     .optional()
     .transform((val) => (val ? new Date(val) : new Date())),
 });
 
-export const getWeeklySummaryInsightParamsSchema = z.object({
+export const getGoalSummaryInsightParamsSchema = z.object({
   summaryId: z.string(),
 });
