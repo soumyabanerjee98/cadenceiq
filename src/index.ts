@@ -3,8 +3,17 @@ import express, { type Request, type Response } from 'express';
 import cors from 'cors';
 import { validateApiKey } from './middleware/apiKey.middleware.js';
 import routes from '@/routes/index.js';
+import { apiLimiter } from './utils/rate_limiter.util.js';
 
 const app = express();
+
+app.use(
+  apiLimiter({
+    minutes: 1,
+    maxRequests: 200,
+    message: 'Too many requests from this IP, please try again after 1 minute',
+  }),
+); // Apply rate limiter to all requests
 
 app.use(
   cors({
