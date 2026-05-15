@@ -10,18 +10,28 @@ export const createGoal = async (
     currentLoad,
     targetLoad,
     adjustedLoad,
+    fatigue,
+    fitness,
+    readiness,
     plan,
-    adjustedPlan,
     startDate,
+    endDate,
+    experienceLevel,
+    customGoalRequest,
   } = req.body;
 
-  const result = await goalService.createWeeklyGoal(userId, {
+  const result = await goalService.createGoal(userId, {
     currentLoad,
     targetLoad,
     adjustedLoad,
+    fatigue,
+    fitness,
+    readiness,
     plan,
-    adjustedPlan,
     startDate,
+    endDate,
+    experienceLevel,
+    customGoalRequest,
   });
 
   return res.json(result);
@@ -33,5 +43,14 @@ export const getCurrentGoal = async (
 ) => {
   const userId = req.user.userId;
   const result = await goalService.getCurrentGoal(userId);
+  return res.json(result);
+};
+
+export const evaluateGoalCompletion = async (
+  req: Request & { user?: any },
+  res: Response,
+) => {
+  const goalId = req.params.goalId as string;
+  const result = await goalService.evaluateGoalCompletion(goalId);
   return res.json(result);
 };

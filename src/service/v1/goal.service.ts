@@ -1,124 +1,264 @@
 import { prisma } from '@/lib/prisma.js';
-import { updateTrainingState } from './strava.service.js';
 
-const getWeekStart = (date: Date) => {
-  const d = new Date(date);
-  const day = d.getDay(); // 0 = Sun
-  const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Monday start
-  return new Date(d.setDate(diff));
-};
-
-export const createWeeklyGoal = async (
+export const createGoal = async (
   userId: string,
   input: {
     currentLoad: number;
     targetLoad: number;
     adjustedLoad: number;
+
+    fatigue: number;
+    fitness: number;
+    readiness: number;
+
+    startDate: Date;
+    endDate: Date;
+
     plan: Plan[];
-    adjustedPlan: boolean;
-    startDate?: Date;
+
+    experienceLevel: 'beginner' | 'intermediate' | 'advanced';
+
+    customGoalRequest?: string;
   },
 ) => {
   const {
     currentLoad,
     targetLoad,
     adjustedLoad,
+
+    fatigue,
+    fitness,
+    readiness,
+
     plan,
-    adjustedPlan,
+
     startDate,
+    endDate,
+
+    experienceLevel,
+    customGoalRequest,
   } = input;
 
-  const weekStart = getWeekStart(startDate || new Date());
-
-  const weekEnd = new Date(weekStart);
-  weekEnd.setDate(weekStart.getDate() + 6);
-
-  const { atl, ctl, tsb } = await updateTrainingState(userId, weekStart);
+  const start = new Date(startDate);
+  const end = new Date(endDate);
 
   return await prisma.$transaction(async (tx) => {
-    // 1. create goal (unique constraint handles duplicates)
-    const goal = await tx.goal.create({
-      data: {
+    // =========================
+    // 1. DEACTIVATE OLD GOALS
+    // =========================
+
+    await tx.goal.updateMany({
+      where: {
         userId,
-        currentLoad,
-        targetLoad,
-        adjustedLoad,
-        fatigue: atl, // use ATL as fatigue proxy
-        atl,
-        ctl,
-        tsb,
-        weekStart,
-        weekEnd,
+        isActive: true,
+      },
+      data: {
+        isActive: false,
       },
     });
 
-    // 2. create plan (use createMany for better control)
-    const plans = await tx.plan.createMany({
+    // =========================
+    // 2. CREATE GOAL
+    // =========================
+
+    const goal = await tx.goal.create({
+      data: {
+        userId,
+
+        startDate: start,
+        endDate: end,
+
+        experienceLevel,
+        customGoalRequest: customGoalRequest ?? null,
+
+        currentLoad,
+        targetLoad,
+        adjustedLoad,
+
+        fatigue,
+        fitness,
+        readiness,
+
+        status: 'on_track',
+
+        isActive: true,
+      },
+    });
+
+    // =========================
+    // 3. CREATE PLAN SESSIONS
+    // =========================
+
+    await tx.plan.createMany({
       data: plan.map((p) => ({
         goalId: goal.id,
-        day: p.day,
+
+        date: new Date(p.date),
+
         type: p.type,
-        load: p.load,
-        version: adjustedPlan ? 2 : 1,
-        isAdjusted: adjustedPlan,
+
+        title: p.title,
+        description: p.description,
+
+        instructions: p.instructions,
+
+        targetLoad: p.targetLoad,
+
+        targetDistance: p.targetDistance,
+        targetDuration: p.targetDuration,
+
+        completed: false,
       })),
     });
 
-    // 3. update current goal pointer
+    // =========================
+    // 4. UPDATE USER POINTER
+    // =========================
+
     const updatedUser = await tx.user.update({
-      where: { id: userId },
+      where: {
+        id: userId,
+      },
       data: {
         currentGoalId: goal.id,
       },
     });
 
-    return { goal, plans, updatedUser };
+    // =========================
+    // 5. FETCH CREATED PLANS
+    // =========================
+
+    const plans = await tx.plan.findMany({
+      where: {
+        goalId: goal.id,
+      },
+      orderBy: {
+        date: 'asc',
+      },
+    });
+
+    return {
+      goal,
+      plans,
+      updatedUser,
+    };
   });
 };
 
 export const getCurrentGoal = async (userId: string) => {
   const now = new Date();
 
-  // normalize today's boundaries
+  // =========================
+  // NORMALIZE TODAY RANGE
+  // =========================
+
   const start = new Date(now);
   start.setHours(0, 0, 0, 0);
 
   const end = new Date(now);
   end.setHours(23, 59, 59, 999);
 
-  // find goal covering today
+  // =========================
+  // FIND ACTIVE GOAL
+  // =========================
+
   const goal = await prisma.goal.findFirst({
     where: {
       userId,
-      weekStart: { lte: end },
-      weekEnd: { gte: start },
+
+      startDate: {
+        lte: end,
+      },
+
+      endDate: {
+        gte: start,
+      },
+
+      isActive: true,
     },
+
     include: {
       plan: {
-        orderBy: { version: 'desc' },
+        orderBy: {
+          date: 'asc',
+        },
       },
+
       weeklySummary: true,
     },
   });
 
   if (!goal) {
-    throw new Error('No active goal found for current week');
+    throw new Error('No active goal found');
   }
 
-  const latestPlanMap = new Map<string, any>();
+  return goal;
+};
 
-  for (const p of goal.plan) {
-    const existing = latestPlanMap.get(p.day);
+export const evaluateGoalCompletion = async (goalId: string) => {
+  const goal = await prisma.goal.findUnique({
+    where: {
+      id: goalId,
+    },
 
-    if (!existing || p.version > existing.version) {
-      latestPlanMap.set(p.day, p);
-    }
+    include: {
+      plan: true,
+    },
+  });
+
+  if (!goal) {
+    throw new Error('Goal not found');
   }
 
-  const latestPlan = Array.from(latestPlanMap.values());
+  // =========================
+  // ONLY EVALUATE AFTER END DATE
+  // =========================
+
+  const now = new Date();
+
+  if (now < goal.endDate) {
+    return {
+      completed: false,
+      reason: 'Goal period still active',
+    };
+  }
+
+  // =========================
+  // CALCULATE LOADS
+  // =========================
+
+  const plannedLoad = goal.plan.reduce((sum, p) => sum + p.targetLoad, 0);
+
+  const actualLoad = goal.plan.reduce((sum, p) => sum + (p.actualLoad || 0), 0);
+
+  const adherence = plannedLoad > 0 ? actualLoad / plannedLoad : 0;
+
+  // =========================
+  // DETERMINE COMPLETION
+  // =========================
+
+  const isCompleted = adherence >= 0.8;
+
+  // =========================
+  // UPDATE GOAL
+  // =========================
+
+  await prisma.goal.update({
+    where: {
+      id: goal.id,
+    },
+
+    data: {
+      isCompleted,
+      isActive: false,
+    },
+  });
 
   return {
-    ...goal,
-    plan: latestPlan,
+    plannedLoad,
+    actualLoad,
+    adherence,
+
+    completed: isCompleted,
   };
 };

@@ -85,7 +85,7 @@ export const computeActivityMetrics = (
   return { zone: null, trainingLoad: null, source: 'none' };
 };
 
-export const updateGoalAfterActivity = async (
+export const updateGoalAndPlanAfterActivity = async (
   userId: string,
   activityDate: Date,
   previousLoad: number,
@@ -103,8 +103,16 @@ export const updateGoalAfterActivity = async (
   const goal = await prisma.goal.findFirst({
     where: {
       userId,
-      weekStart: { lte: activityDate },
-      weekEnd: { gte: activityDate },
+      startDate: {
+        lte: activityDate,
+      },
+      endDate: {
+        gte: activityDate,
+      },
+      isActive: true,
+    },
+    include: {
+      plan: true,
     },
   });
 
@@ -121,8 +129,6 @@ export const updateGoalAfterActivity = async (
    * fitness = CTL
    */
 
-  const fatigue = atl ?? goal.fatigue;
-
   // 3. Goal status logic
   let status: 'on_track' | 'overtrained' | 'undertrained' = 'on_track';
 
@@ -134,34 +140,81 @@ export const updateGoalAfterActivity = async (
   if (tsb !== undefined) {
     if (tsb < -20) {
       status = 'overtrained';
-    } else if (updatedCurrentLoad < goal.targetLoad * 0.8) {
+    } else if (updatedCurrentLoad < goal.adjustedLoad * 0.8) {
       status = 'undertrained';
     }
   } else {
-    // Fallback logic
-    if (updatedCurrentLoad > goal.targetLoad * 1.2) {
+    /**
+     * FALLBACK:
+     * load ratio based
+     */
+
+    if (updatedCurrentLoad > goal.adjustedLoad * 1.2) {
       status = 'overtrained';
-    } else if (updatedCurrentLoad < goal.targetLoad * 0.8) {
+    } else if (updatedCurrentLoad < goal.adjustedLoad * 0.8) {
       status = 'undertrained';
     }
   }
 
-  // 4. Update goal
-  const updateData: any = {
-    currentLoad: updatedCurrentLoad,
-    fatigue,
-    status,
-  };
-
-  if (atl !== undefined) updateData.atl = atl;
-  if (ctl !== undefined) updateData.ctl = ctl;
-  if (tsb !== undefined) updateData.tsb = tsb;
+  // 4. Update goal (delta-safe)
 
   await prisma.goal.update({
     where: {
       id: goal.id,
     },
-    data: updateData,
+
+    data: {
+      currentLoad: updatedCurrentLoad,
+
+      fatigue: atl ?? goal.fatigue,
+      fitness: ctl ?? goal.fitness,
+      readiness: tsb ?? goal.readiness,
+
+      status,
+    },
+  });
+
+  const dayStart = new Date(activityDate);
+  dayStart.setHours(0, 0, 0, 0);
+
+  const dayEnd = new Date(activityDate);
+  dayEnd.setHours(23, 59, 59, 999);
+
+  const planSession = await prisma.plan.findFirst({
+    where: {
+      goalId: goal.id,
+
+      date: {
+        gte: dayStart,
+        lte: dayEnd,
+      },
+    },
+  });
+
+  if (!planSession) {
+    return;
+  }
+
+  const updatedActualLoad = (planSession.actualLoad || 0) + deltaLoad;
+
+  // =========================
+  // AUTO COMPLETE SESSION
+  // =========================
+
+  const completed = updatedActualLoad >= planSession.targetLoad * 0.7;
+
+  await prisma.plan.update({
+    where: {
+      id: planSession.id,
+    },
+
+    data: {
+      actualLoad: updatedActualLoad,
+
+      completed,
+
+      completedAt: completed ? new Date() : null,
+    },
   });
 };
 
@@ -188,8 +241,8 @@ export const updateTrainingState = async (userId: string, date: Date) => {
     orderBy: { createdAt: 'desc' },
   });
 
-  const prevATL = lastGoal?.atl || 0;
-  const prevCTL = lastGoal?.ctl || 0;
+  const prevATL = lastGoal?.fatigue || 0;
+  const prevCTL = lastGoal?.fitness || 0;
 
   const atl = prevATL + ATL_ALPHA * (todayLoad - prevATL);
   const ctl = prevCTL + CTL_ALPHA * (todayLoad - prevCTL);
@@ -405,7 +458,7 @@ export const syncActivity = async (activityId: number, athleteId: number) => {
     );
 
     //  Update goal (delta-safe)
-    await updateGoalAfterActivity(
+    await updateGoalAndPlanAfterActivity(
       token?.userId || '',
       activityDate,
       previousLoad,
