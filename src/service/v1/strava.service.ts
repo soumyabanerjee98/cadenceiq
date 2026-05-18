@@ -63,7 +63,7 @@ export const computeActivityMetrics = (
       trainingLoad: Math.round(trainingLoad),
 
       source: ActivityMetricSource.HEART_RATE,
-      accuracy: ActivityMetricAccuracy.HIGH,
+      accuracy: ActivityMetricAccuracy.EXCELLENT,
     };
   }
 

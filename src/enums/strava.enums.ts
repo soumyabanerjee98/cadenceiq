@@ -1,4 +1,5 @@
 export enum ActivityMetricAccuracy {
+  EXCELLENT = 'excellent',
   HIGH = 'high',
   MEDIUM = 'medium',
   LOW = 'low',
