@@ -12,6 +12,7 @@ import {
   ActivityMetricAccuracy,
   ActivityMetricSource,
 } from '@/enums/strava.enums.js';
+import { activityQueue } from '@/queues/activity.queue.js';
 
 export const fetchStravaActivity = async (
   activityId: number,
@@ -509,7 +510,10 @@ export const processWebhookEvent = async (event: StravaEvent) => {
   switch (aspect_type) {
     case 'create':
     case 'update':
-      return await syncActivity(object_id, owner_id);
+      return await activityQueue.add('sync-activity', {
+        activityId: object_id,
+        athleteId: owner_id,
+      });
 
     case 'delete':
       return await deleteActivity(object_id);
